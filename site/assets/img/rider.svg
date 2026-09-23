@@ -1,0 +1,34 @@
+<svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Daily Dish delivery rider on a scooter">
+  <!-- speed lines -->
+  <g stroke="#D9541E" stroke-width="5" stroke-linecap="round" opacity=".55">
+    <line x1="8" y1="118" x2="52" y2="118"/>
+    <line x1="22" y1="138" x2="58" y2="138"/>
+    <line x1="4" y1="158" x2="40" y2="158"/>
+  </g>
+  <!-- ground -->
+  <line x1="40" y1="203" x2="300" y2="203" stroke="#2A1810" stroke-width="3" stroke-linecap="round" opacity=".18"/>
+  <!-- delivery box -->
+  <rect x="62" y="70" width="78" height="66" rx="8" fill="#D9541E"/>
+  <rect x="62" y="70" width="78" height="14" rx="6" fill="#A83A12"/>
+  <text x="101" y="119" text-anchor="middle" font-family="Bricolage Grotesque, Arial Black, sans-serif" font-weight="800" font-size="24" fill="#FBF7F0">DD</text>
+  <!-- scooter body -->
+  <path d="M70 150 h110 c14 0 22 -8 28 -22 l14 -34 h16 l-16 44 c-6 16 -2 30 12 34 l-10 10 h-150 z" fill="#2A1810"/>
+  <path d="M84 146 h86 c10 0 16 -6 20 -14" fill="none" stroke="#F4B63F" stroke-width="4" stroke-linecap="round"/>
+  <!-- handlebar + light -->
+  <path d="M236 94 l10 -34" stroke="#2A1810" stroke-width="7" stroke-linecap="round"/>
+  <path d="M234 60 h24" stroke="#2A1810" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="262" cy="104" r="7" fill="#F4B63F"/>
+  <!-- wheels -->
+  <circle cx="98" cy="186" r="20" fill="#2A1810"/><circle cx="98" cy="186" r="8" fill="#FBF7F0"/>
+  <circle cx="238" cy="186" r="20" fill="#2A1810"/><circle cx="238" cy="186" r="8" fill="#FBF7F0"/>
+  <!-- rider -->
+  <path d="M150 140 l22 -6 l20 26" fill="none" stroke="#2E6B3F" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M190 160 h14" stroke="#2A1810" stroke-width="9" stroke-linecap="round"/>
+  <path d="M150 140 l8 -58" stroke="#2E6B3F" stroke-width="26" stroke-linecap="round"/>
+  <path d="M166 92 l40 -14 l28 -16" fill="none" stroke="#2E6B3F" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="234" cy="61" r="6" fill="#6B3E26"/>
+  <circle cx="166" cy="46" r="17" fill="#6B3E26"/>
+  <!-- helmet -->
+  <path d="M146 44 a21 21 0 0 1 41 -2 l2 6 h-43 z" fill="#F4B63F"/>
+  <path d="M170 46 h22" stroke="#2A1810" stroke-width="4" stroke-linecap="round"/>
+</svg>
