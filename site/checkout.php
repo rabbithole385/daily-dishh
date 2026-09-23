@@ -58,6 +58,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $itemStmt->execute([$orderId, $line['item']['id'], $line['item']['name'], $line['item']['price'], $line['qty']]);
         }
         $pdo->commit();
+
+        $uniqueCatsStmt = $pdo->prepare("SELECT COUNT(DISTINCT m.category_id) FROM order_items oi JOIN menu_items m ON m.id = oi.menu_item_id WHERE oi.order_id = ?");
+        $uniqueCatsStmt->execute([$orderId]);
+        $uniqueCats = (int)$uniqueCatsStmt->fetchColumn();
+
+        $orderForTotal = ['id' => $orderId, 'subtotal' => $subtotal, 'delivery_fee' => $fee, 'total' => $subtotal + $fee];
+        $total = (float)order_total($orderForTotal);
+        $reward = game_reward_on_order($pdo, $total, $uniqueCats);
+        $_SESSION['order_reward_' . $orderId] = $reward;
+
         cart_clear();
         $_SESSION['my_orders'][] = $code;
         header('Location: ' . base_url('order-confirmation.php') . '?code=' . urlencode($code));

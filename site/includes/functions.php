@@ -349,3 +349,228 @@ function sheet_markup(): string
 <?php
     return ob_get_clean();
 }
+
+// ---------------------------------------------------------------------
+// Gamification: loyalty points, badges, streaks, daily spin
+// All data stored per-visitor in session + persisted to gamification
+// table by session id so returning customers keep progress.
+// ---------------------------------------------------------------------
+
+function game_session_id(): string
+{
+    if (empty($_SESSION['game_sid'])) {
+        $_SESSION['game_sid'] = 'u' . substr(bin2hex(random_bytes(8)), 0, 12);
+    }
+    return $_SESSION['game_sid'];
+}
+
+function game_get_raw(PDO $pdo): array
+{
+    $sid = game_session_id();
+    $stmt = $pdo->prepare("SELECT gvalue FROM gamification WHERE gkey = ?");
+    $stmt->execute(["state:$sid"]);
+    $row = $stmt->fetchColumn();
+    $data = $row ? json_decode($row, true) : null;
+    if (!is_array($data)) $data = [];
+    return $data + [
+        'points' => 0,
+        'total_spent' => 0,
+        'orders' => 0,
+        'streak_days' => 0,
+        'last_order_date' => null,
+        'badges' => [],
+        'last_spin_date' => null,
+        'lucky_reward' => null,
+        'xp' => 0,
+    ];
+}
+
+function game_save_raw(PDO $pdo, array $data): void
+{
+    $sid = game_session_id();
+    $stmt = $pdo->prepare("INSERT INTO gamification (gkey, gvalue) VALUES (?, ?)
+        ON CONFLICT(gkey) DO UPDATE SET gvalue = excluded.gvalue");
+    $stmt->execute(["state:$sid", json_encode($data, JSON_UNESCAPED_UNICODE)]);
+}
+
+function game_level(int $xp): array
+{
+    $levels = [
+        ['name' => 'Table for One', 'min' => 0,    'emoji' => '🥢', 'color' => '#8C6A4F'],
+        ['name' => 'Regular',       'min' => 200,  'emoji' => '🍲', 'color' => '#2E6B3F'],
+        ['name' => 'Connoisseur',   'min' => 600,  'emoji' => '🌿', 'color' => '#B87333'],
+        ['name' => 'Gourmand',      'min' => 1500, 'emoji' => '🍷', 'color' => '#C9A227'],
+        ['name' => 'Chef\u2019s Table', 'min' => 3500, 'emoji' => '🔥', 'color' => '#A83A12'],
+    ];
+    $cur = $levels[0]; $next = $levels[1] ?? null;
+    for ($i = 0; $i < count($levels); $i++) {
+        if ($xp >= $levels[$i]['min']) { $cur = $levels[$i]; $next = $levels[$i + 1] ?? null; }
+    }
+    $minXp = $cur['min'];
+    $maxXp = $next ? $next['min'] : $cur['min'] + 1000;
+    $pct = $maxXp === $minXp ? 100 : min(100, max(0, floor(($xp - $minXp) / ($maxXp - $minXp) * 100)));
+    return [
+        'name' => $cur['name'], 'emoji' => $cur['emoji'], 'color' => $cur['color'],
+        'next_name' => $next ? $next['name'] : null, 'next_min' => $next ? $next['min'] : null,
+        'min_xp' => $minXp, 'max_xp' => $maxXp, 'progress' => $pct,
+    ];
+}
+
+function game_badge_defs(): array
+{
+    return [
+        'first_order'  => ['name' => 'First Bite',      'emoji' => '🍽️', 'desc' => 'Your first order from our kitchen'],
+        'five_orders'  => ['name' => 'Five-Course',     'emoji' => '🥘', 'desc' => '5 orders — you\u2019re part of the family'],
+        'ten_orders'   => ['name' => 'House Favorite',  'emoji' => '⭐', 'desc' => '10 orders — you know every dish'],
+        'big_spender'  => ['name' => 'Grand Feast',     'emoji' => '🥩', 'desc' => '₦50,000 lifetime — chef\u2019s compliments'],
+        'streak_3'     => ['name' => 'Three Days Hot',  'emoji' => '🌶️', 'desc' => 'Ordered 3 days straight — keep it up'],
+        'streak_7'     => ['name' => 'Weekly Ritual',   'emoji' => '🌿', 'desc' => '7 days in a row — a true culinary ritual'],
+        'explorer'     => ['name' => 'Flavor Journey',  'emoji' => '🧺', 'desc' => 'Tasted 6 different categories'],
+        'spinner'      => ['name' => 'Daily Treat',     'emoji' => '🍬', 'desc' => 'Claimed your Daily Kitchen Reward'],
+        'vip'          => ['name' => 'Chef\u2019s Table',  'emoji' => '🍷', 'desc' => 'Reached Gourmand tier — our highest honor'],
+    ];
+}
+
+function game_maybe_unlock(array &$data, string $badge): bool
+{
+    if (in_array($badge, $data['badges'], true)) return false;
+    $data['badges'][] = $badge;
+    return true;
+}
+
+function game_reward_choices(): array
+{
+    return [
+        ['id' => 'p50',   'label' => '50 Points',  'weight' => 28, 'run' => function (&$d) { $d['points'] += 50;  $d['xp'] += 50;  return '+50 reward points — on the house.'; }],
+        ['id' => 'p150',  'label' => '150 Points', 'weight' => 18, 'run' => function (&$d) { $d['points'] += 150; $d['xp'] += 150; return '+150 reward points — chef\u2019s compliments.'; }],
+        ['id' => 'p300',  'label' => '300 Points', 'weight' => 10, 'run' => function (&$d) { $d['points'] += 300; $d['xp'] += 300; return '+300 reward points — a feast of a reward!'; }],
+        ['id' => 'badge', 'label' => 'Milestone',  'weight' => 14, 'run' => function (&$d) { game_maybe_unlock($d, 'spinner'); return 'Milestone unlocked: Daily Treat 🍬'; }],
+        ['id' => 'free_drink', 'label' => 'Free Drink', 'weight' => 8, 'run' => function (&$d) { $d['lucky_reward'] = 'free_drink'; $d['xp'] += 40; return 'A FREE drink on your next order — ask for it!'; }],
+        ['id' => 'try_tomorrow', 'label' => 'Visit Soon', 'weight' => 14, 'run' => function (&$d) { $d['xp'] += 10; return 'Come back tomorrow — +10 tasting notes for stopping in.'; }],
+        ['id' => 'bonus', 'label' => 'Chef\u2019s Surprise', 'weight' => 8, 'run' => function (&$d) { $d['xp'] += 500; return 'Chef\u2019s surprise: +500 tasting notes!'; }],
+    ];
+}
+
+function game_pick_reward(): array
+{
+    $choices = game_reward_choices();
+    $total = 0; foreach ($choices as $c) $total += $c['weight'];
+    $r = mt_rand(1, $total);
+    $acc = 0;
+    foreach ($choices as $c) { $acc += $c['weight']; if ($r <= $acc) return $c; }
+    return $choices[0];
+}
+
+function game_state_for_client(PDO $pdo): array
+{
+    $data = game_get_raw($pdo);
+    $lvl = game_level($data['xp']);
+    $badges = [];
+    $defs = game_badge_defs();
+    foreach ($data['badges'] as $b) {
+        if (isset($defs[$b])) $badges[] = ['id' => $b] + $defs[$b];
+    }
+    $today = date('Y-m-d');
+    $unlockedIds = array_values($data['badges'] ?? []);
+    return [
+        'sid' => game_session_id(),
+        'points' => (int)$data['points'],
+        'xp' => (int)$data['xp'],
+        'orders' => (int)$data['orders'],
+        'streak' => (int)$data['streak_days'],
+        'badges' => $badges,
+        'badges_unlocked' => $unlockedIds,
+        'badges_new' => [],
+        'lucky_reward' => $data['lucky_reward'],
+        'can_spin' => ($data['last_spin_date'] ?? '') !== $today,
+        'can_spin_today' => ($data['last_spin_date'] ?? '') !== $today,
+        'level' => $lvl,
+    ];
+}
+
+function game_daily_spin(PDO $pdo): array
+{
+    $data = game_get_raw($pdo);
+    $today = date('Y-m-d');
+    if (($data['last_spin_date'] ?? '') === $today) {
+        return ['ok' => false, 'message' => 'You already spun today — come back tomorrow!', 'state' => game_state_for_client($pdo)];
+    }
+    $reward = game_pick_reward();
+    $msg = call_user_func($reward['run'], $data);
+    $data['last_spin_date'] = $today;
+    game_save_raw($pdo, $data);
+    return [
+        'ok' => true, 'reward_id' => $reward['id'], 'reward_label' => $reward['label'],
+        'message' => $msg, 'state' => game_state_for_client($pdo),
+    ];
+}
+
+function game_points_per_naira(): int { return 1; }
+
+function game_reward_on_order(PDO $pdo, float $total, int $uniqueCats = 1): array
+{
+    $data = game_get_raw($pdo);
+    $today = date('Y-m-d');
+    $newBadges = [];
+    $oldLevel = game_level($data['xp']);
+
+    $pointsGained = (int)round(max(0, $total) * game_points_per_naira() / 50);
+    if ($pointsGained <= 0) $pointsGained = 10;
+    $data['points'] += $pointsGained;
+    $data['xp']     += $pointsGained + 80;
+    $data['total_spent'] += $total;
+    $data['orders'] += 1;
+
+    $yesterday = date('Y-m-d', strtotime('-1 day'));
+    if (($data['last_order_date'] ?? null) === $today) {
+        // same day: keep streak
+    } elseif (($data['last_order_date'] ?? null) === $yesterday) {
+        $data['streak_days'] = ($data['streak_days'] ?? 0) + 1;
+    } else {
+        $data['streak_days'] = 1;
+    }
+    $data['last_order_date'] = $today;
+
+    if ($data['orders'] >= 1)  if (game_maybe_unlock($data, 'first_order'))  $newBadges[] = 'first_order';
+    if ($data['orders'] >= 5)  if (game_maybe_unlock($data, 'five_orders'))  $newBadges[] = 'five_orders';
+    if ($data['orders'] >= 10) if (game_maybe_unlock($data, 'ten_orders'))   $newBadges[] = 'ten_orders';
+    if ($data['streak_days'] >= 3) if (game_maybe_unlock($data, 'streak_3')) $newBadges[] = 'streak_3';
+    if ($data['streak_days'] >= 7) if (game_maybe_unlock($data, 'streak_7')) $newBadges[] = 'streak_7';
+    if ($data['total_spent'] >= 50000) if (game_maybe_unlock($data, 'big_spender')) $newBadges[] = 'big_spender';
+    if ($uniqueCats >= 6) if (game_maybe_unlock($data, 'explorer')) $newBadges[] = 'explorer';
+    $lvl = game_level($data['xp']);
+    if (($lvl['next_min'] === null || $lvl['min_xp'] >= 1500) && $lvl['min_xp'] >= 1500) {
+        if (game_maybe_unlock($data, 'vip')) $newBadges[] = 'vip';
+    }
+
+    game_save_raw($pdo, $data);
+    $leveledUp = $lvl['name'] !== $oldLevel['name'];
+
+    $defs = game_badge_defs();
+    $badgePayload = [];
+    foreach ($newBadges as $nb) if (isset($defs[$nb])) $badgePayload[] = ['id' => $nb] + $defs[$nb];
+
+    return [
+        'points_gained' => $pointsGained,
+        'new_badges' => $badgePayload,
+        'leveled_up' => $leveledUp,
+        'level_name' => $lvl['name'],
+        'state' => game_state_for_client($pdo),
+    ];
+}
+
+function game_topbar_markup(PDO $pdo): string
+{
+    $g = game_state_for_client($pdo);
+    $lvl = $g['level'];
+    $json = json_encode($g, JSON_UNESCAPED_UNICODE);
+    ob_start();
+?><a class="game-pill" href="<?= e(base_url('#rewards')) ?>" title="Loyalty rewards" data-game-pill data-state="<?= e($json) ?>" aria-label="Rewards">
+  <span class="gp-level" style="--lc:<?= e($lvl['color']) ?>"><?= e($lvl['emoji']) ?></span>
+  <span class="gp-meta">
+    <span class="gp-lvl-name"><?= e($lvl['name']) ?></span>
+    <span class="gp-stats"><b data-game-points><?= (int)$g['points'] ?></b> pts · 🔥 <b data-game-streak><?= (int)$g['streak'] ?></b></span>
+  </span>
+</a><?php
+    return ob_get_clean();
+}

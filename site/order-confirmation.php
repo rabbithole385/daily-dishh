@@ -15,6 +15,11 @@ $ls = $pdo->prepare("SELECT * FROM order_items WHERE order_id = ?");
 $ls->execute([$order['id']]);
 $orderLines = $ls->fetchAll(PDO::FETCH_ASSOC);
 
+$reward = $_SESSION['order_reward_' . (int)$order['id']] ?? null;
+if ($reward !== null) {
+    unset($_SESSION['order_reward_' . (int)$order['id']]);
+}
+
 $pageTitle = 'Order placed';
 $hideCartBar = true;
 $phone = get_setting($pdo, 'phone_primary');
@@ -29,6 +34,7 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 <div class="wrap confirm">
+  <?php if ($reward): ?><div hidden data-order-reward="<?= e(json_encode($reward)) ?>"></div><?php endif; ?>
   <h1>Order sent to the kitchen</h1>
   <p>Thanks, <?= e($order['customer_name']) ?>. We will call <?= e($order['phone']) ?> in a few minutes to confirm before we start cooking.</p>
 

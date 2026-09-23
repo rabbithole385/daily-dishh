@@ -116,6 +116,12 @@ function migrate_schema(PDO $pdo): void
             $pdo->exec("ALTER TABLE orders ADD COLUMN $name $type");
         }
     }
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS gamification (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        gkey TEXT UNIQUE NOT NULL,
+        gvalue TEXT
+    )");
 }
 
 function seed_data(PDO $pdo): void

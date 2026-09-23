@@ -32,6 +32,17 @@ $err = flash_get('error');
   </div>
 </div>
 
+<div class="wrap" style="padding: 16px 20px 0;">
+  <div class="challenge-pill" data-challenge-bar>
+    <span class="cp-emoji">🧺</span>
+    <div class="cp-info">
+      <strong>Flavor Journey</strong>
+      <small>Pick from 3 categories today for a little bonus</small>
+    </div>
+    <div class="cp-count"><span data-challenge-count>0</span>/3</div>
+  </div>
+</div>
+
 <div class="menu-bar">
   <div class="wrap menu-bar-in">
     <label class="menu-search">
@@ -50,12 +61,14 @@ $err = flash_get('error');
   <?php if ($ok): ?><div class="alert alert-success" style="margin-top:20px;"><?= e($ok) ?></div><?php endif; ?>
   <?php if ($err): ?><div class="alert alert-error" style="margin-top:20px;"><?= e($err) ?></div><?php endif; ?>
 
-  <?php foreach ($menu as $sec):
+  <?php $idx = 0; foreach ($menu as $sec):
       $cat = $sec['cat'];
       $withPhoto = array_filter($sec['items'], fn($i) => !empty($i['image']));
       $noPhoto = array_filter($sec['items'], fn($i) => empty($i['image']));
+      $lateClass = $idx === 0 ? '' : ($idx % 2 === 0 ? ' late' : ' late2');
+      $idx++;
   ?>
-    <section class="menu-cat" id="<?= e($cat['slug']) ?>" data-menu-cat>
+    <section class="menu-cat reveal<?= $lateClass ?>" id="<?= e($cat['slug']) ?>" data-menu-cat>
       <div class="menu-cat-head">
         <h2><?= e($cat['name']) ?></h2>
         <span><?= count($sec['items']) ?> dishes</span>
@@ -66,6 +79,7 @@ $err = flash_get('error');
         <?php foreach ($withPhoto as $item): ?>
           <article class="dish"<?= dish_attr($item, $cat['name']) ?> data-search="<?= e(strtolower($item['name'] . ' ' . $item['description'] . ' ' . $cat['name'])) ?>">
             <div class="dish-photo" data-open-dish>
+              <?php if (!empty($item['is_featured'])): ?><span class="dish-hot flame">🔥 HOT</span><?php endif; ?>
               <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy">
             </div>
             <div class="dish-body">
