@@ -76,6 +76,6 @@ $cartCount = cart_count();
   </div>
 </footer>
 
-<script src="<?= e(base_url('assets/js/app.js')) ?>?v=4" defer></script>
+<script src="<?= e(base_url('assets/js/app.js')) ?>?v=6" defer></script>
 </body>
 </html>

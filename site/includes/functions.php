@@ -335,13 +335,23 @@ function sheet_markup(): string
     <span class="sheet-cat" data-sheet-cat></span>
     <h2 id="sheetName" data-sheet-name></h2>
     <p data-sheet-desc></p>
-    <div class="sheet-foot">
-      <div class="stepper">
-        <button type="button" data-sheet-dec aria-label="Fewer">−</button>
-        <output data-sheet-qty>1</output>
-        <button type="button" data-sheet-inc aria-label="More">+</button>
+    <div class="sheet-qty-block">
+      <div class="sq-top">
+        <div class="stepper">
+          <button type="button" data-sheet-dec aria-label="Fewer">−</button>
+          <output data-sheet-qty>1</output>
+          <button type="button" data-sheet-inc aria-label="More">+</button>
+        </div>
+        <div class="sq-total"><small>Total</small><strong data-sheet-total></strong></div>
       </div>
-      <button type="button" class="btn btn-primary sheet-add" data-sheet-add><span>Add to order</span><span data-sheet-total></span></button>
+      <label class="qty-slider">
+        <span>Portions</span>
+        <input type="range" data-sheet-slider min="1" max="20" value="1" step="1" aria-label="Quantity slider">
+        <span class="qty-ticks"><i>1</i><i>5</i><i>10</i><i>15</i><i>20</i></span>
+      </label>
+    </div>
+    <div class="sheet-foot">
+      <button type="button" class="btn btn-primary btn-block sheet-add" data-sheet-add><span>Add to order</span></button>
     </div>
     <p class="sheet-note">Spice level, allergies or protein choice? Add it in the notes at checkout.</p>
   </div>
@@ -400,7 +410,7 @@ function game_level(int $xp): array
         ['name' => 'Regular',       'min' => 200,  'emoji' => '🍲', 'color' => '#2E6B3F'],
         ['name' => 'Connoisseur',   'min' => 600,  'emoji' => '🌿', 'color' => '#B87333'],
         ['name' => 'Gourmand',      'min' => 1500, 'emoji' => '🍷', 'color' => '#C9A227'],
-        ['name' => 'Chef\u2019s Table', 'min' => 3500, 'emoji' => '🔥', 'color' => '#A83A12'],
+        ['name' => 'Chef’s Table', 'min' => 3500, 'emoji' => '🔥', 'color' => '#A83A12'],
     ];
     $cur = $levels[0]; $next = $levels[1] ?? null;
     for ($i = 0; $i < count($levels); $i++) {
@@ -420,14 +430,14 @@ function game_badge_defs(): array
 {
     return [
         'first_order'  => ['name' => 'First Bite',      'emoji' => '🍽️', 'desc' => 'Your first order from our kitchen'],
-        'five_orders'  => ['name' => 'Five-Course',     'emoji' => '🥘', 'desc' => '5 orders — you\u2019re part of the family'],
+        'five_orders'  => ['name' => 'Five-Course',     'emoji' => '🥘', 'desc' => '5 orders — you’re part of the family'],
         'ten_orders'   => ['name' => 'House Favorite',  'emoji' => '⭐', 'desc' => '10 orders — you know every dish'],
-        'big_spender'  => ['name' => 'Grand Feast',     'emoji' => '🥩', 'desc' => '₦50,000 lifetime — chef\u2019s compliments'],
+        'big_spender'  => ['name' => 'Grand Feast',     'emoji' => '🥩', 'desc' => '₦50,000 lifetime — chef’s compliments'],
         'streak_3'     => ['name' => 'Three Days Hot',  'emoji' => '🌶️', 'desc' => 'Ordered 3 days straight — keep it up'],
         'streak_7'     => ['name' => 'Weekly Ritual',   'emoji' => '🌿', 'desc' => '7 days in a row — a true culinary ritual'],
         'explorer'     => ['name' => 'Flavor Journey',  'emoji' => '🧺', 'desc' => 'Tasted 6 different categories'],
         'spinner'      => ['name' => 'Daily Treat',     'emoji' => '🍬', 'desc' => 'Claimed your Daily Kitchen Reward'],
-        'vip'          => ['name' => 'Chef\u2019s Table',  'emoji' => '🍷', 'desc' => 'Reached Gourmand tier — our highest honor'],
+        'vip'          => ['name' => 'Chef’s Table',  'emoji' => '🍷', 'desc' => 'Reached Gourmand tier — our highest honor'],
     ];
 }
 
@@ -442,12 +452,12 @@ function game_reward_choices(): array
 {
     return [
         ['id' => 'p50',   'label' => '50 Points',  'weight' => 28, 'run' => function (&$d) { $d['points'] += 50;  $d['xp'] += 50;  return '+50 reward points — on the house.'; }],
-        ['id' => 'p150',  'label' => '150 Points', 'weight' => 18, 'run' => function (&$d) { $d['points'] += 150; $d['xp'] += 150; return '+150 reward points — chef\u2019s compliments.'; }],
+        ['id' => 'p150',  'label' => '150 Points', 'weight' => 18, 'run' => function (&$d) { $d['points'] += 150; $d['xp'] += 150; return '+150 reward points — chef’s compliments.'; }],
         ['id' => 'p300',  'label' => '300 Points', 'weight' => 10, 'run' => function (&$d) { $d['points'] += 300; $d['xp'] += 300; return '+300 reward points — a feast of a reward!'; }],
         ['id' => 'badge', 'label' => 'Milestone',  'weight' => 14, 'run' => function (&$d) { game_maybe_unlock($d, 'spinner'); return 'Milestone unlocked: Daily Treat 🍬'; }],
         ['id' => 'free_drink', 'label' => 'Free Drink', 'weight' => 8, 'run' => function (&$d) { $d['lucky_reward'] = 'free_drink'; $d['xp'] += 40; return 'A FREE drink on your next order — ask for it!'; }],
         ['id' => 'try_tomorrow', 'label' => 'Visit Soon', 'weight' => 14, 'run' => function (&$d) { $d['xp'] += 10; return 'Come back tomorrow — +10 tasting notes for stopping in.'; }],
-        ['id' => 'bonus', 'label' => 'Chef\u2019s Surprise', 'weight' => 8, 'run' => function (&$d) { $d['xp'] += 500; return 'Chef\u2019s surprise: +500 tasting notes!'; }],
+        ['id' => 'bonus', 'label' => 'Chef’s Surprise', 'weight' => 8, 'run' => function (&$d) { $d['xp'] += 500; return 'Chef’s surprise: +500 tasting notes!'; }],
     ];
 }
 

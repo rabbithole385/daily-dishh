@@ -139,7 +139,7 @@ include __DIR__ . '/includes/header.php';
   <div class="wrap">
     <div class="section-head center">
       <div>
-        <h2>🍷 Chef\u2019s Table Rewards</h2>
+        <h2>🍷 Chef’s Table Rewards</h2>
         <p>Our way of saying thank you. Every order brings you closer to the next tier.</p>
       </div>
     </div>
@@ -160,7 +160,7 @@ include __DIR__ . '/includes/header.php';
                 <?php if (!empty($gameState['level']['next_min'])): ?>
                 <span>Next tier: <span data-game-next-min><?= (int)$gameState['level']['next_min'] ?></span></span>
                 <?php else: ?>
-                <span>You\u2019ve reached the chef\u2019s table 👨‍🍳</span>
+                <span>You’ve reached the chef’s table 👨‍🍳</span>
                 <?php endif; ?>
               </div>
             </div>
@@ -181,7 +181,7 @@ include __DIR__ . '/includes/header.php';
           </div>
         </div>
         <div class="rc-actions">
-          <a href="<?= e(base_url('menu.php')) ?>" class="btn btn-dark">See today\u2019s menu</a>
+          <a href="<?= e(base_url('menu.php')) ?>" class="btn btn-dark">See today’s menu</a>
         </div>
       </div>
 
@@ -199,7 +199,7 @@ include __DIR__ . '/includes/header.php';
         <?php $canSpin = !empty($gameState['can_spin_today']); ?>
         <button class="btn btn-gold btn-block" data-spin-go data-can-spin="<?= $canSpin ? '1' : '0' ?>"
           <?= $canSpin ? '' : 'disabled' ?>>
-          <?= $canSpin ? '🍽️ Claim today\u2019s treat' : '⏰ Back tomorrow for another' ?>
+          <?= $canSpin ? '🍽️ Claim today’s treat' : '⏰ Back tomorrow for another' ?>
         </button>
       </div>
     </div>

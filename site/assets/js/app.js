@@ -23,12 +23,13 @@
   }
   var confettiLayer, popLayer, emojiLayer;
 
-  /* ------------------------------ Spice / Herb particles (confetti, food-friendly palette) ------------------------------ */
+  /* ------------------------------ Spice / Herb particles (confetti, food-friendly palette + SPICY emoji) ------------------------------ */
   function confetti(opts) {
     if (prefersReduced) return;
     opts = opts || {};
     confettiLayer = confettiLayer || ensureLayer('confettiLayer');
     var palette = opts.palette || ['#8B5A2B', '#C7862A', '#2E6B3F', '#A83A12', '#FFE6A8', '#D2B48C', '#704214'];
+    var spicyEmojis = opts.spicy === false ? [] : (opts.spicyEmojis || ['🌶️', '🧄', '🧅', '🌿', '🍋', '🥬', '🌽', '🧂']);
     var count = opts.count || 120;
     var originX = opts.x == null ? 0.5 : opts.x;
     var originY = opts.y == null ? -0.1 : opts.y;
@@ -37,8 +38,14 @@
       (function () {
         var piece = document.createElement('span');
         piece.className = 'conf';
-        piece.style.background = palette[(Math.random() * palette.length) | 0];
-        if (Math.random() < 0.25) piece.style.borderRadius = '50%';
+        var isSpicy = spicyEmojis.length && Math.random() < (opts.spicyRatio || 0.22);
+        if (isSpicy) {
+          piece.classList.add('spicy');
+          piece.textContent = spicyEmojis[(Math.random() * spicyEmojis.length) | 0];
+        } else {
+          piece.style.background = palette[(Math.random() * palette.length) | 0];
+          if (Math.random() < 0.25) piece.style.borderRadius = '50%';
+        }
         piece.style.left = (originX * 100) + '%';
         piece.style.top = (originY * 100) + '%';
         piece.style.transform = 'translate3d(0,0,0) rotate(0deg)';
@@ -98,14 +105,50 @@
     }
   }
 
+  /* ------------------------------ Steam / heat burst (anchored to an element rect) ------------------------------ */
+  function steamBurst(el, count, glyphs) {
+    if (prefersReduced || !el) return;
+    glyphs = glyphs || ['〰', '∿', '～', '~'];
+    count = count || 3;
+    var rect = el.getBoundingClientRect();
+    var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    var scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    var layer = ensureLayer('steamLayer');
+    for (var i = 0; i < count; i++) {
+      (function () {
+        var s = document.createElement('span');
+        s.className = 'steam rise';
+        s.textContent = glyphs[(Math.random() * glyphs.length) | 0];
+        var x = rect.left + scrollX + rect.width * (0.35 + Math.random() * 0.3);
+        var y = rect.top + scrollY + rect.height * 0.15;
+        s.style.left = x + 'px';
+        s.style.top = y + 'px';
+        s.style.animationDelay = (Math.random() * 0.3) + 's';
+        s.style.fontSize = (0.9 + Math.random() * 0.8) + 'rem';
+        layer.appendChild(s);
+        setTimeout(function () { s.remove(); }, 2800);
+      })();
+    }
+  }
+
   /* ------------------------------ Mobile nav ------------------------------ */
   var toggle = document.getElementById('navToggle');
   var nav = document.getElementById('mainNav');
   if (toggle && nav) {
-    toggle.addEventListener('click', function () {
-      var open = nav.classList.toggle('open');
+    function setNav(open) {
+      nav.classList.toggle('open', open);
+      body.classList.toggle('nav-open', open);
       toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    toggle.addEventListener('click', function () {
+      setNav(!nav.classList.contains('open'));
     });
+    // tap backdrop to close nav
+    body.addEventListener('click', function (e) {
+      if (!body.classList.contains('nav-open')) return;
+      if (nav.contains(e.target) || toggle.contains(e.target)) return;
+      setNav(false);
+    }, true);
   }
 
   /* ------------------------------ Toast ------------------------------ */
@@ -149,6 +192,9 @@
     document.querySelectorAll('[data-game-level-name]').forEach(function (el) { el.textContent = state.level.name; });
     document.querySelectorAll('[data-game-level-emoji]').forEach(function (el) { el.textContent = state.level.emoji; });
     document.querySelectorAll('[data-game-next-name]').forEach(function (el) { el.textContent = state.level.next_name || 'Max level!'; });
+    document.querySelectorAll('[data-game-next-min]').forEach(function (el) {
+      if (state.level.next_min) el.textContent = state.level.next_min;
+    });
     document.querySelectorAll('[data-game-progress]').forEach(function (el) {
       el.style.width = (state.level.progress || 0) + '%';
     });
@@ -160,6 +206,9 @@
         el.textContent = orig || 'Come back tomorrow!';
       }
     });
+    document.querySelectorAll('[data-rd-points]').forEach(function (el) { el.textContent = state.points; });
+    document.querySelectorAll('[data-rd-xp]').forEach(function (el) { el.textContent = state.xp; });
+    document.querySelectorAll('[data-rd-streak]').forEach(function (el) { el.textContent = state.streak; });
     var pill = document.querySelector('[data-game-pill]');
     if (pill) {
       pill.classList.remove('pulse');
@@ -257,14 +306,24 @@
     }).catch(function () { form.submit(); });
   });
 
-  /* ------------------------------ Dish sheet ------------------------------ */
+  /* ------------------------------ Dish sheet (with interactive quantity slider) ------------------------------ */
   var sheet = document.getElementById('dishSheet');
   if (sheet && typeof sheet.showModal === 'function') {
     var cur = null, qty = 1;
     var $ = function (s) { return sheet.querySelector(s); };
+    var slider = $('[data-sheet-slider]');
+    function updateSliderFill() {
+      if (!slider) return;
+      var min = parseInt(slider.min || '1', 10);
+      var max = parseInt(slider.max || '20', 10);
+      var pct = ((qty - min) / (max - min)) * 100;
+      slider.style.setProperty('--fill', pct + '%');
+    }
     function renderQty() {
       $('[data-sheet-qty]').textContent = qty;
       $('[data-sheet-total]').textContent = cur ? formatNaira(cur.price * qty) : '';
+      if (slider) slider.value = String(qty);
+      updateSliderFill();
     }
     function formatNaira(n) { return '₦' + Math.round(n).toLocaleString('en-NG'); }
     function open(d) {
@@ -281,6 +340,16 @@
     $('[data-sheet-close]').addEventListener('click', function () { sheet.close(); });
     $('[data-sheet-dec]').addEventListener('click', function () { qty = Math.max(1, qty - 1); renderQty(); });
     $('[data-sheet-inc]').addEventListener('click', function () { qty = Math.min(20, qty + 1); renderQty(); });
+    if (slider) {
+      slider.addEventListener('input', function () {
+        qty = Math.max(1, Math.min(20, parseInt(slider.value, 10) || 1));
+        $('[data-sheet-qty]').textContent = qty;
+        $('[data-sheet-total]').textContent = cur ? formatNaira(cur.price * qty) : '';
+        updateSliderFill();
+      });
+      slider.addEventListener('pointerdown', function () { slider.classList.add('dragging'); });
+      slider.addEventListener('pointerup', function () { slider.classList.remove('dragging'); });
+    }
     $('[data-sheet-add]').addEventListener('click', function () {
       var btn = this; btn.disabled = true;
       post({ action: 'add', item_id: cur.id, qty: qty }).then(function (d) {
@@ -301,6 +370,96 @@
       e.preventDefault();
       open(JSON.parse(host.getAttribute('data-dish')));
     });
+  }
+
+  /* ------------------------------ Cart page stepper / clear AJAX ------------------------------ */
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    var act = form.querySelector('[name="action"]');
+    if (!act) return;
+    var actionVal = act.value;
+    var isStepper = form.closest('.stepper');
+    if (isStepper) {
+      if (actionVal !== 'inc' && actionVal !== 'dec') return;
+    } else {
+      if (actionVal !== 'clear') return;
+    }
+    e.preventDefault();
+    var fd = new FormData(form);
+    fetch(base + 'api/cart.php', {
+      method: 'POST', body: fd, credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'fetch' }
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (!d.ok) { toast(d.message || 'Could not update. Refreshing…', true); setTimeout(function () { location.reload(); }, 900); return; }
+      syncCart(d);
+      if (actionVal === 'clear') {
+        toast(d.message, false);
+        setTimeout(function () { location.reload(); }, 400);
+        return;
+      }
+      var oline = form.closest('.oline');
+      if (oline) {
+        var out = oline.querySelector('output');
+        var lineTotalEl = oline.querySelector('.oline-total');
+        if (out && typeof d.qty === 'number') out.textContent = d.qty;
+        if (actionVal === 'dec' && d.qty < 1) {
+          oline.style.transition = 'opacity .25s, transform .25s';
+          oline.style.opacity = '0'; oline.style.transform = 'translateX(20px)';
+          setTimeout(function () {
+            oline.remove();
+            if (!document.querySelector('.oline')) { location.reload(); }
+            else { updateCartDocket(); syncCartDocketSubtotal(); }
+          }, 260);
+        } else {
+          var priceEl = oline.querySelector('.unit');
+          if (priceEl && lineTotalEl) {
+            var unitMatch = (priceEl.textContent || '').match(/[\d,]+/g);
+            if (unitMatch) {
+              var unit = parseFloat(String(unitMatch[0]).replace(/,/g, ''));
+              if (!isNaN(unit)) lineTotalEl.textContent = '₦' + Math.round(unit * (d.qty || 0)).toLocaleString('en-NG');
+            }
+          }
+          updateCartDocket(); syncCartDocketSubtotal();
+        }
+      }
+    }).catch(function () { form.submit(); });
+  });
+
+  function updateCartDocket() {
+    var lines = document.querySelectorAll('.oline');
+    var docket = document.querySelector('.sticky-col .docket');
+    if (!docket || !lines.length) return;
+  }
+  function syncCartDocketSubtotal() {
+    var sub = 0;
+    document.querySelectorAll('.oline').forEach(function (ol) {
+      var t = ol.querySelector('.oline-total');
+      if (!t) return;
+      var m = (t.textContent || '').match(/[\d,]+/g);
+      if (m) sub += parseFloat(String(m[0]).replace(/,/g, ''));
+    });
+    var docket = document.querySelector('.sticky-col .docket');
+    if (!docket) return;
+    var rows = docket.querySelectorAll('.docket-row:not(.total)');
+    var lineItems = Array.prototype.slice.call(rows);
+    lines = document.querySelectorAll('.oline');
+    if (lineItems.length === lines.length) {
+      var idx = 0;
+      lines.forEach(function (ol) {
+        var qtyOut = ol.querySelector('output');
+        var name = ol.querySelector('h3');
+        var totalEl = ol.querySelector('.oline-total');
+        if (qtyOut && name && lineItems[idx]) {
+          lineItems[idx].querySelector('span:first-child').textContent = (qtyOut.textContent || '0') + ' × ' + (name.textContent || '');
+          if (totalEl && lineItems[idx].querySelector('span:last-child')) {
+            lineItems[idx].querySelector('span:last-child').textContent = totalEl.textContent;
+          }
+          idx++;
+        }
+      });
+    }
+    var totalRow = docket.querySelector('.docket-row.total span:last-child');
+    if (totalRow && sub > 0) totalRow.textContent = '₦' + Math.round(sub).toLocaleString('en-NG');
   }
 
   /* ------------------------------ Menu: live search + active chip ------------------------------ */
@@ -468,6 +627,118 @@
       track.addEventListener('mouseenter', function () { paused = true; });
       track.addEventListener('mouseleave', function () { paused = false; });
       setInterval(function () { if (!paused) scrollBy(1); }, 90);
+    }
+  })();
+
+  /* ================================================================
+     🔥 CONTAGIOUS INTERACTIONS — tilt, ripple, stagger, tap, steam
+     ================================================================ */
+  (function () {
+    var isCoarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+
+    /* ---- 1. Grid stagger numberer: assign --g-i and --dish-i for waterfall reveals ---- */
+    var containers = document.querySelectorAll(
+      '.dish-grid, .badges, .steps, .rc-stats, .gallery, .footer-grid, .rd-stats, .mrows, .chips'
+    );
+    containers.forEach(function (grp) {
+      var kids = grp.children;
+      for (var k = 0; k < kids.length; k++) {
+        kids[k].style.setProperty('--g-i', String(k));
+        kids[k].style.setProperty('--dish-i', String(k));
+        if (!kids[k].classList.contains('reveal')) kids[k].classList.add('reveal', 'gs-fast');
+      }
+    });
+
+    /* ---- 2. 3D mouse tilt on dish cards (desktop / fine pointer only) ---- */
+    if (!isCoarse && !prefersReduced && 'onpointermove' in window) {
+      var dishEls = document.querySelectorAll('.dish');
+      dishEls.forEach(function (dish) {
+        var isIn = false;
+        dish.addEventListener('pointerenter', function () { isIn = true; dish.classList.add('tilt'); });
+        dish.addEventListener('pointerleave', function () {
+          isIn = false; dish.classList.remove('tilt');
+          dish.style.transform = '';
+          dish.style.setProperty('--rx', '0deg');
+          dish.style.setProperty('--ry', '0deg');
+        });
+        dish.addEventListener('pointermove', function (e) {
+          if (!isIn) return;
+          var r = dish.getBoundingClientRect();
+          var px = (e.clientX - r.left) / r.width;  // 0..1
+          var py = (e.clientY - r.top) / r.height;  // 0..1
+          var ry = (px - 0.5) * 14;  // rotateY ±7 deg
+          var rx = (0.5 - py) * 12;  // rotateX ±6 deg
+          dish.style.setProperty('--mx', (px * 100) + '%');
+          dish.style.setProperty('--my', (py * 100) + '%');
+          dish.style.transform = 'perspective(1000px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) translateY(-6px) scale(1.015)';
+        });
+      });
+    }
+
+    /* ---- 3. Dish tap feedback + steam burst (mobile-first) ---- */
+    document.addEventListener('touchstart', function (e) {
+      var dish = e.target.closest('.dish');
+      if (!dish) return;
+      dish.classList.remove('tap');
+      void dish.offsetWidth;
+      dish.classList.add('tap');
+      setTimeout(function () { dish.classList.remove('tap'); }, 400);
+      if (Math.random() < 0.55) {
+        var photo = dish.querySelector('.dish-photo');
+        steamBurst(photo || dish, 2 + ((Math.random() * 2) | 0));
+      }
+    }, { passive: true });
+
+    /* ---- 4. Click ripple trigger (pointerdown) for buttons/chips ---- */
+    function setRippleXY(el, ev) {
+      var r = el.getBoundingClientRect();
+      var mx = ((ev.clientX - r.left) / r.width) * 100;
+      var my = ((ev.clientY - r.top) / r.height) * 100;
+      el.style.setProperty('--mx', mx + '%');
+      el.style.setProperty('--my', my + '%');
+    }
+    document.addEventListener('pointerdown', function (e) {
+      var el = e.target.closest('.btn, .btn-add, .chip, .stepper button, .sheet-add, .btn-ask, .btn-gold');
+      if (!el) return;
+      setRippleXY(el, e);
+      el.classList.remove('ripple');
+      void el.offsetWidth;
+      el.classList.add('ripple');
+      setTimeout(function () { el.classList.remove('ripple'); }, 650);
+    });
+
+    /* ---- 5. Steam on dish photo hover (desktop) ---- */
+    if (!isCoarse && !prefersReduced) {
+      var steamTimer = {};
+      document.addEventListener('mouseover', function (e) {
+        var photo = e.target.closest('.dish-photo, .hero-slider, .rewards-card');
+        if (!photo) return;
+        var id = photo.getAttribute('data-steam-id');
+        if (!id) { id = Math.random().toString(36).slice(2); photo.setAttribute('data-steam-id', id); }
+        if (steamTimer[id]) return;
+        steamBurst(photo, 2);
+        steamTimer[id] = setInterval(function () {
+          if (document.body.contains(photo)) steamBurst(photo, 1);
+          else { clearInterval(steamTimer[id]); delete steamTimer[id]; }
+        }, 2200 + Math.random() * 800);
+      });
+      document.addEventListener('mouseout', function (e) {
+        var photo = e.target.closest('.dish-photo, .hero-slider, .rewards-card');
+        if (!photo) return;
+        var related = e.relatedTarget;
+        if (related && photo.contains(related)) return;
+        var id = photo.getAttribute('data-steam-id');
+        if (id && steamTimer[id]) { clearInterval(steamTimer[id]); delete steamTimer[id]; }
+      });
+    }
+
+    /* ---- 6. Ambient steam kickoff for hero + rewards (first 5s) ---- */
+    if (!prefersReduced) {
+      var hs = document.querySelector('.hero-slider');
+      var rc = document.querySelector('.rewards-card');
+      setTimeout(function () { if (hs) steamBurst(hs, 3); }, 1800);
+      setTimeout(function () { if (hs) steamBurst(hs, 2); }, 4200);
+      setTimeout(function () { if (rc) steamBurst(rc, 2); }, 3000);
     }
   })();
 

@@ -33,11 +33,12 @@ $err = flash_get('error');
 </div>
 
 <div class="wrap" style="padding: 16px 20px 0;">
-  <div class="challenge-pill" data-challenge-bar>
+  <div class="challenge-pill">
     <span class="cp-emoji">🧺</span>
     <div class="cp-info">
       <strong>Flavor Journey</strong>
       <small>Pick from 3 categories today for a little bonus</small>
+      <div class="cp-bar"><div class="cp-bar-fill" data-challenge-bar style="width:0%"></div></div>
     </div>
     <div class="cp-count"><span data-challenge-count>0</span>/3</div>
   </div>

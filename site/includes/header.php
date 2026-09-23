@@ -19,7 +19,7 @@ $act = $active ?? '';
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?= e(base_url('assets/css/style.css')) ?>?v=4">
+  <link rel="stylesheet" href="<?= e(base_url('assets/css/style.css')) ?>?v=6">
 </head>
 <body class="page-<?= e($act ?? 'home') ?>" data-base="<?= e(base_url('')) ?>" data-csrf="<?= e(csrf_token()) ?>">
 <a class="skip" href="#main">Skip to content</a>
