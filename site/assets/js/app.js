@@ -38,7 +38,7 @@
       (function () {
         var piece = document.createElement('span');
         piece.className = 'conf';
-        var isSpicy = spicyEmojis.length && Math.random() < (opts.spicyRatio || 0.22);
+        var isSpicy = spicyEmojis.length && opts.spicy === true && Math.random() < (opts.spicyRatio || 0);
         if (isSpicy) {
           piece.classList.add('spicy');
           piece.textContent = spicyEmojis[(Math.random() * spicyEmojis.length) | 0];
@@ -105,30 +105,10 @@
     }
   }
 
-  /* ------------------------------ Steam / heat burst (anchored to an element rect) ------------------------------ */
+  /* ------------------------------ Steam / heat burst (disabled — mature motion only) ------------------------------ */
   function steamBurst(el, count, glyphs) {
-    if (prefersReduced || !el) return;
-    glyphs = glyphs || ['〰', '∿', '～', '~'];
-    count = count || 3;
-    var rect = el.getBoundingClientRect();
-    var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
-    var scrollY = window.pageYOffset || document.documentElement.scrollTop;
-    var layer = ensureLayer('steamLayer');
-    for (var i = 0; i < count; i++) {
-      (function () {
-        var s = document.createElement('span');
-        s.className = 'steam rise';
-        s.textContent = glyphs[(Math.random() * glyphs.length) | 0];
-        var x = rect.left + scrollX + rect.width * (0.35 + Math.random() * 0.3);
-        var y = rect.top + scrollY + rect.height * 0.15;
-        s.style.left = x + 'px';
-        s.style.top = y + 'px';
-        s.style.animationDelay = (Math.random() * 0.3) + 's';
-        s.style.fontSize = (0.9 + Math.random() * 0.8) + 'rem';
-        layer.appendChild(s);
-        setTimeout(function () { s.remove(); }, 2800);
-      })();
-    }
+    /* Removed per editorial refinement. Kept as no-op to preserve call sites. */
+    return;
   }
 
   /* ------------------------------ Mobile nav ------------------------------ */
@@ -243,7 +223,6 @@
     var x = rect.left + rect.width / 2 + window.scrollX;
     var y = rect.top + window.scrollY;
     xpPop(pointsText || '+10 tasting notes', x, y, 'green');
-    confetti({ count: 18, x: (rect.left + rect.width / 2) / window.innerWidth, y: (rect.top) / window.innerHeight, spread: 1.0, palette: ['#C7862A', '#8B5A2B', '#2E6B3F'] });
   }
 
   /* ------------------------------ Cart state ------------------------------ */
@@ -291,6 +270,155 @@
     });
   }
 
+  window.cartAdd = function (itemId, qty, originEl) {
+    if (typeof qty !== 'number') qty = 1;
+    return new Promise(function (resolve, reject) {
+      post({ action: 'add', item_id: itemId, qty: qty }).then(function (d) {
+        if (window.syncStickyCart) window.syncStickyCart(d);
+        else syncCart(d);
+        markAdded(itemId, d.qty);
+        cartPop(originEl, d.subtotal_text || d.message);
+        replaceWithInlineStepper(originEl, itemId, d.qty);
+        resolve(d);
+      }).catch(function () {
+        toast('Could not add item. Check your connection.', true);
+        reject();
+      });
+    });
+  };
+
+  window.syncStickyCart = function (dataOrOpts) {
+    function apply(data) {
+      syncCart(data);
+      var rail = document.querySelector('[data-sticky-rail]');
+      if (rail) {
+        var rc = rail.querySelector('[data-rail-count]');
+        if (rc) rc.textContent = data.count + ' item' + (data.count !== 1 ? 's' : '');
+        var rs = rail.querySelector('[data-rail-subtotal]');
+        if (rs) rs.textContent = data.subtotal_text;
+        if (data.lines) {
+          var linesEl = rail.querySelector('[data-rail-lines]');
+          if (linesEl) {
+            linesEl.innerHTML = '';
+            data.lines.forEach(function (ln) {
+              var row = document.createElement('div');
+              row.className = 'docket-row';
+              var sp1 = document.createElement('span');
+              sp1.textContent = (ln.qty || 0) + ' × ' + (ln.name || '');
+              var sp2 = document.createElement('span');
+              sp2.textContent = ln.line_total_text || '';
+              row.appendChild(sp1);
+              row.appendChild(sp2);
+              linesEl.appendChild(row);
+            });
+          }
+        }
+        if (data.count === 0) {
+          var emptyState = rail.querySelector('[data-rail-empty]');
+          var filledState = rail.querySelector('[data-rail-filled]');
+          if (emptyState) emptyState.hidden = false;
+          if (filledState) filledState.hidden = true;
+        } else {
+          var emptyState2 = rail.querySelector('[data-rail-empty]');
+          var filledState2 = rail.querySelector('[data-rail-filled]');
+          if (emptyState2) emptyState2.hidden = true;
+          if (filledState2) filledState2.hidden = false;
+        }
+      }
+      var tabBadges = document.querySelectorAll('.tab-badge');
+      tabBadges.forEach(function (tb) {
+        tb.textContent = data.count;
+        tb.hidden = data.count < 1;
+      });
+    }
+    if (dataOrOpts && typeof dataOrOpts === 'object') {
+      apply(dataOrOpts);
+    } else {
+      fetch(base + 'api/cart.php?view=json', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(apply);
+    }
+  };
+
+  function cartPop(originEl, text) {
+    if (!originEl) return;
+    var rect = originEl.getBoundingClientRect();
+    var x = rect.left + rect.width / 2 + window.scrollX;
+    var y = rect.top - 8 + window.scrollY;
+    popLayer = popLayer || ensureLayer('popLayer');
+    var el = document.createElement('span');
+    el.className = 'cart-pop';
+    el.textContent = text;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    popLayer.appendChild(el);
+    setTimeout(function () { el.remove(); }, 750);
+  }
+
+  function replaceWithInlineStepper(originEl, itemId, qty) {
+    if (!originEl) return;
+    var container = originEl.closest('.dish-photo, .ft-img, .also-img');
+    if (!container) return;
+    var quickAdds = container.querySelectorAll('.quick-add[data-item-id="' + itemId + '"], .quick-add');
+    quickAdds.forEach(function (qa) {
+      var qaId = qa.getAttribute('data-item-id');
+      if (!qaId || qaId === String(itemId)) qa.hidden = true;
+    });
+    var existing = container.querySelector('.inline-stepper[data-inline-item="' + itemId + '"]');
+    if (existing) {
+      var out = existing.querySelector('output');
+      if (out) out.textContent = qty;
+      return;
+    }
+    var stepper = document.createElement('div');
+    stepper.className = 'inline-stepper';
+    stepper.setAttribute('data-inline-item', String(itemId));
+    var dec = document.createElement('button');
+    dec.type = 'button';
+    dec.setAttribute('aria-label', 'Decrease');
+    dec.setAttribute('data-action', 'dec');
+    dec.textContent = '−';
+    var output = document.createElement('output');
+    output.textContent = qty;
+    var inc = document.createElement('button');
+    inc.type = 'button';
+    inc.setAttribute('aria-label', 'Increase');
+    inc.setAttribute('data-action', 'inc');
+    inc.textContent = '+';
+    stepper.appendChild(dec);
+    stepper.appendChild(output);
+    stepper.appendChild(inc);
+    var firstQuickAdd = container.querySelector('.quick-add');
+    if (firstQuickAdd && firstQuickAdd.parentNode) {
+      firstQuickAdd.parentNode.insertBefore(stepper, firstQuickAdd.nextSibling);
+    } else {
+      container.appendChild(stepper);
+    }
+    dec.addEventListener('click', function () {
+      post({ action: 'dec', item_id: itemId, qty: 1 }).then(function (d) {
+        syncCart(d);
+        if (window.syncStickyCart) window.syncStickyCart(d);
+        var o = stepper.querySelector('output');
+        if (o) o.textContent = d.qty;
+        if (d.qty <= 0) {
+          stepper.remove();
+          container.querySelectorAll('.quick-add').forEach(function (qa) {
+            var qaId = qa.getAttribute('data-item-id');
+            if (!qaId || qaId === String(itemId)) qa.hidden = false;
+          });
+        }
+      }).catch(function () { toast('Could not update cart.', true); });
+    });
+    inc.addEventListener('click', function () {
+      post({ action: 'inc', item_id: itemId, qty: 1 }).then(function (d) {
+        syncCart(d);
+        if (window.syncStickyCart) window.syncStickyCart(d);
+        var o = stepper.querySelector('output');
+        if (o) o.textContent = d.qty;
+      }).catch(function () { toast('Could not update cart.', true); });
+    });
+  }
+
   /* ------------------------------ Quick add buttons (with XP pop) ------------------------------ */
   document.addEventListener('submit', function (e) {
     var form = e.target;
@@ -304,6 +432,15 @@
       toast(d.message, false, 'gold');
       celebrateAdd(btn, '+80 tasting notes');
     }).catch(function () { form.submit(); });
+  });
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-quick-add]');
+    if (!btn) return;
+    e.preventDefault();
+    var id = btn.getAttribute('data-item-id');
+    if (!id) return;
+    cartAdd(id, 1, btn);
   });
 
   /* ------------------------------ Dish sheet (with interactive quantity slider) ------------------------------ */
@@ -359,7 +496,6 @@
         toast(d.message, false, 'gold');
         var rect = btn.getBoundingClientRect();
         xpPop('+' + (80 * qty) + ' tasting notes', rect.left + rect.width / 2 + window.scrollX, rect.top + window.scrollY, 'green');
-        confetti({ count: 36, x: (rect.left + rect.width / 2) / window.innerWidth, y: rect.top / window.innerHeight });
       }).catch(function () { btn.disabled = false; toast('Could not reach the kitchen. Check your connection.', true); });
     });
     document.addEventListener('click', function (e) {
@@ -631,11 +767,9 @@
   })();
 
   /* ================================================================
-     🔥 CONTAGIOUS INTERACTIONS — tilt, ripple, stagger, tap, steam
+     Refined interactions — stagger, scroll reveal, Ken Burns hover
      ================================================================ */
   (function () {
-    var isCoarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-
     /* ---- 1. Grid stagger numberer: assign --g-i and --dish-i for waterfall reveals ---- */
     var containers = document.querySelectorAll(
       '.dish-grid, .badges, .steps, .rc-stats, .gallery, .footer-grid, .rd-stats, .mrows, .chips'
@@ -648,98 +782,6 @@
         if (!kids[k].classList.contains('reveal')) kids[k].classList.add('reveal', 'gs-fast');
       }
     });
-
-    /* ---- 2. 3D mouse tilt on dish cards (desktop / fine pointer only) ---- */
-    if (!isCoarse && !prefersReduced && 'onpointermove' in window) {
-      var dishEls = document.querySelectorAll('.dish');
-      dishEls.forEach(function (dish) {
-        var isIn = false;
-        dish.addEventListener('pointerenter', function () { isIn = true; dish.classList.add('tilt'); });
-        dish.addEventListener('pointerleave', function () {
-          isIn = false; dish.classList.remove('tilt');
-          dish.style.transform = '';
-          dish.style.setProperty('--rx', '0deg');
-          dish.style.setProperty('--ry', '0deg');
-        });
-        dish.addEventListener('pointermove', function (e) {
-          if (!isIn) return;
-          var r = dish.getBoundingClientRect();
-          var px = (e.clientX - r.left) / r.width;  // 0..1
-          var py = (e.clientY - r.top) / r.height;  // 0..1
-          var ry = (px - 0.5) * 14;  // rotateY ±7 deg
-          var rx = (0.5 - py) * 12;  // rotateX ±6 deg
-          dish.style.setProperty('--mx', (px * 100) + '%');
-          dish.style.setProperty('--my', (py * 100) + '%');
-          dish.style.transform = 'perspective(1000px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) translateY(-6px) scale(1.015)';
-        });
-      });
-    }
-
-    /* ---- 3. Dish tap feedback + steam burst (mobile-first) ---- */
-    document.addEventListener('touchstart', function (e) {
-      var dish = e.target.closest('.dish');
-      if (!dish) return;
-      dish.classList.remove('tap');
-      void dish.offsetWidth;
-      dish.classList.add('tap');
-      setTimeout(function () { dish.classList.remove('tap'); }, 400);
-      if (Math.random() < 0.55) {
-        var photo = dish.querySelector('.dish-photo');
-        steamBurst(photo || dish, 2 + ((Math.random() * 2) | 0));
-      }
-    }, { passive: true });
-
-    /* ---- 4. Click ripple trigger (pointerdown) for buttons/chips ---- */
-    function setRippleXY(el, ev) {
-      var r = el.getBoundingClientRect();
-      var mx = ((ev.clientX - r.left) / r.width) * 100;
-      var my = ((ev.clientY - r.top) / r.height) * 100;
-      el.style.setProperty('--mx', mx + '%');
-      el.style.setProperty('--my', my + '%');
-    }
-    document.addEventListener('pointerdown', function (e) {
-      var el = e.target.closest('.btn, .btn-add, .chip, .stepper button, .sheet-add, .btn-ask, .btn-gold');
-      if (!el) return;
-      setRippleXY(el, e);
-      el.classList.remove('ripple');
-      void el.offsetWidth;
-      el.classList.add('ripple');
-      setTimeout(function () { el.classList.remove('ripple'); }, 650);
-    });
-
-    /* ---- 5. Steam on dish photo hover (desktop) ---- */
-    if (!isCoarse && !prefersReduced) {
-      var steamTimer = {};
-      document.addEventListener('mouseover', function (e) {
-        var photo = e.target.closest('.dish-photo, .hero-slider, .rewards-card');
-        if (!photo) return;
-        var id = photo.getAttribute('data-steam-id');
-        if (!id) { id = Math.random().toString(36).slice(2); photo.setAttribute('data-steam-id', id); }
-        if (steamTimer[id]) return;
-        steamBurst(photo, 2);
-        steamTimer[id] = setInterval(function () {
-          if (document.body.contains(photo)) steamBurst(photo, 1);
-          else { clearInterval(steamTimer[id]); delete steamTimer[id]; }
-        }, 2200 + Math.random() * 800);
-      });
-      document.addEventListener('mouseout', function (e) {
-        var photo = e.target.closest('.dish-photo, .hero-slider, .rewards-card');
-        if (!photo) return;
-        var related = e.relatedTarget;
-        if (related && photo.contains(related)) return;
-        var id = photo.getAttribute('data-steam-id');
-        if (id && steamTimer[id]) { clearInterval(steamTimer[id]); delete steamTimer[id]; }
-      });
-    }
-
-    /* ---- 6. Ambient steam kickoff for hero + rewards (first 5s) ---- */
-    if (!prefersReduced) {
-      var hs = document.querySelector('.hero-slider');
-      var rc = document.querySelector('.rewards-card');
-      setTimeout(function () { if (hs) steamBurst(hs, 3); }, 1800);
-      setTimeout(function () { if (hs) steamBurst(hs, 2); }, 4200);
-      setTimeout(function () { if (rc) steamBurst(rc, 2); }, 3000);
-    }
   })();
 
   /* ------------------------------ Scroll Reveal ------------------------------ */
@@ -885,15 +927,6 @@
     }
   })();
 
-  /* ------------------------------ Button radial shine ------------------------------ */
-  document.addEventListener('pointermove', function (e) {
-    var btn = e.target.closest('.btn');
-    if (!btn) return;
-    var rect = btn.getBoundingClientRect();
-    btn.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100) + '%');
-    btn.style.setProperty('--my', ((e.clientY - rect.top) / rect.height * 100) + '%');
-  });
-
   /* ------------------------------ Confirmation: order reward celebration ------------------------------ */
   (function () {
     var meta = document.querySelector('[data-order-reward]');
@@ -939,4 +972,38 @@
       else if (!document.hidden && !rainTimer) { rainTimer = setTimeout(ambientRain, 3000); }
     });
   }
+
+  (function () {
+    var co = document.getElementById('checkoutForm');
+    if (!co) return;
+    var nameField = co.querySelector('#name');
+    var phoneField = co.querySelector('#phone');
+    var addressField = co.querySelector('#address');
+    var zoneField = co.querySelector('#delivery_zone');
+    try {
+      var saved = JSON.parse(localStorage.getItem('dd_checkout_v1') || 'null');
+      if (saved) {
+        if (nameField && nameField.value === '' && saved.name) nameField.value = saved.name;
+        if (phoneField && phoneField.value === '' && saved.phone) phoneField.value = saved.phone;
+        if (addressField && addressField.value === '' && saved.address) addressField.value = saved.address;
+        if (zoneField && zoneField.value === '' && saved.delivery_zone) {
+          zoneField.value = saved.delivery_zone;
+          var ev = document.createEvent('Event');
+          ev.initEvent('change', true, false);
+          zoneField.dispatchEvent(ev);
+        }
+      }
+    } catch (_) { }
+    co.addEventListener('submit', function () {
+      try {
+        var payload = {
+          name: nameField ? nameField.value : '',
+          phone: phoneField ? phoneField.value : '',
+          delivery_zone: zoneField ? zoneField.value : '',
+          address: addressField ? addressField.value : ''
+        };
+        localStorage.setItem('dd_checkout_v1', JSON.stringify(payload));
+      } catch (_) { }
+    }, true);
+  })();
 })();

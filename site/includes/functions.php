@@ -27,7 +27,7 @@ function set_setting(PDO $pdo, string $key, string $value): void
     }
 }
 
-function money(?float $amount, PDO $pdo = null): string
+function money(?float $amount, PDO $pdo = null, bool $formatted = true): string
 {
     if ($amount === null) {
         return 'Ask for price';
@@ -36,7 +36,8 @@ function money(?float $amount, PDO $pdo = null): string
     if ($pdo !== null) {
         $symbol = get_setting($pdo, 'currency_symbol', '₦');
     }
-    return $symbol . number_format($amount, 0);
+    $num = $formatted ? number_format($amount, 0) : (string)(int)$amount;
+    return $symbol . $num;
 }
 
 function img_url(?string $filename): string
@@ -357,6 +358,86 @@ function sheet_markup(): string
   </div>
 </dialog>
 <?php
+    return ob_get_clean();
+}
+
+function dish_markup(array $item, array $opts = []): string
+{
+    global $pdo;
+    $catName = $opts['cat'] ?? ($item['category_name'] ?? '');
+    $layout = $opts['layout'] ?? '';
+    $itemId = (int)$item['id'];
+    $price = $item['price'] !== null && $item['price'] !== '' ? (float)$item['price'] : null;
+    $isFeatured = !empty($item['is_featured']) || !empty($item['featured']);
+    $hasPrice = $price !== null;
+    $searchAttr = isset($opts['search']) ? ' data-search="' . e(strtolower($opts['search'])) . '"' : '';
+
+    if ($layout === 'feed') {
+        ob_start(); ?>
+<article class="feed-tile"<?= dish_attr($item, $catName) ?><?= $searchAttr ?>>
+  <div class="ft-img">
+    <?php if ($isFeatured): ?><span class="dish-hot flame">🔥 HOT</span><?php endif; ?>
+    <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy">
+    <?php if ($hasPrice): ?>
+      <button class="quick-add feed-add" data-quick-add data-item-id="<?= $itemId ?>">Add <?= money($price, $pdo, false) ?></button>
+    <?php endif; ?>
+  </div>
+  <div class="ft-strip">
+    <h3><?= e($item['name']) ?></h3>
+    <span class="price <?= $hasPrice ? '' : 'ask' ?>"><?= $hasPrice ? money($price, $pdo) : 'Price on request' ?></span>
+  </div>
+</article>
+<?php
+        return ob_get_clean();
+    }
+
+    ob_start(); ?>
+<article class="dish"<?= dish_attr($item, $catName) ?><?= $searchAttr ?>>
+  <div class="dish-photo" data-open-dish>
+    <?php if (!empty($opts['show_cat']) && $catName): ?><span class="dish-cat"><?= e($catName) ?></span><?php endif; ?>
+    <?php if ($isFeatured): ?><span class="dish-hot flame">🔥 HOT</span><?php endif; ?>
+    <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy">
+    <?php if ($hasPrice): ?>
+      <button class="quick-add" data-quick-add data-item-id="<?= $itemId ?>">Add <?= money($price, $pdo, false) ?></button>
+    <?php endif; ?>
+  </div>
+  <div class="dish-body">
+    <h3 data-open-dish><?= e($item['name']) ?></h3>
+    <p><?= e($item['description'] ?? '') ?></p>
+    <div class="dish-foot">
+      <span class="price <?= $hasPrice ? '' : 'ask' ?>"><?= $hasPrice ? money($price, $pdo) : 'Price on request' ?></span>
+      <?= add_control($pdo, $item) ?>
+    </div>
+  </div>
+</article>
+<?php
+    return ob_get_clean();
+}
+
+function menu_row(array $item, array $opts = []): string
+{
+    global $pdo;
+    $catName = $opts['cat'] ?? '';
+    $searchAttr = isset($opts['search']) ? ' data-search="' . e(strtolower($opts['search'])) . '"' : '';
+    ob_start(); ?>
+<div class="mrow"<?= dish_attr($item, $catName) ?><?= $searchAttr ?>>
+  <div>
+    <h3 data-open-dish><?= e($item['name']) ?></h3>
+    <p><?= e($item['description'] ?? '') ?></p>
+  </div>
+  <div class="mrow-end">
+    <span class="price <?= ($item['price'] === null || $item['price'] === '') ? 'ask' : '' ?>"><?= ($item['price'] === null || $item['price'] === '') ? 'Price on request' : money((float)$item['price'], $pdo) ?></span>
+    <?= add_control($pdo, $item) ?>
+  </div>
+</div>
+<?php
+    return ob_get_clean();
+}
+
+function render_sticky_rail(): string
+{
+    ob_start();
+    include __DIR__ . '/sticky-order-rail.php';
     return ob_get_clean();
 }
 

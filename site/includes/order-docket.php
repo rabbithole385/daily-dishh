@@ -30,6 +30,7 @@ $cancelled = $order['status'] === 'cancelled';
   <div class="docket-row"><span>Payment</span><span><?= e(payment_label($order['payment_method'] ?? 'cash')) ?></span></div>
 
   <?php if (!$cancelled): ?>
+  <?php $orderStatus = $order['status']; include __DIR__ . '/status-timeline.php'; ?>
   <ol class="timeline">
     <?php foreach ($flow as $i => $s): $cls = $i < $pos ? 'done' : ($i === $pos ? ($s === 'delivered' ? 'done' : 'now') : ''); ?>
       <li class="<?= $cls ?>"><span class="dot"></span><strong><?= e($labels[$s][0]) ?></strong><small><?= e($labels[$s][1]) ?></small></li>

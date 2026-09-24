@@ -69,6 +69,41 @@ $err = flash_get('error');
             <button type="submit" class="link-btn">Clear order</button>
           </form>
         </div>
+
+        <a class="btn btn-primary btn-block express-checkout" href="<?= e(base_url('checkout.php')) ?>">Express checkout →</a>
+
+        <?php
+          $cartItemIds = array_map(fn($l) => (int)$l['item']['id'], $lines);
+          $placeholders = implode(',', array_fill(0, count($cartItemIds), '?'));
+          $alsoStmt = $pdo->prepare("SELECT * FROM menu_items WHERE is_available = 1 AND price IS NOT NULL AND id NOT IN ($placeholders) ORDER BY RAND() LIMIT 3");
+          $alsoStmt->execute($cartItemIds);
+          $alsoItems = $alsoStmt->fetchAll(PDO::FETCH_ASSOC);
+        ?>
+        <?php if ($alsoItems): ?>
+        <div class="also-section">
+          <div class="also-head">
+            <span class="eyebrow">You might also like</span>
+            <h3>Guests also ordered</h3>
+          </div>
+          <div class="also-row">
+            <?php foreach ($alsoItems as $alsoItem):
+              $alsoPrice = (float)$alsoItem['price'];
+              $alsoId = (int)$alsoItem['id'];
+            ?>
+              <div class="also-card">
+                <div class="also-img">
+                  <img src="<?= e(img_url($alsoItem['image'])) ?>" alt="<?= e($alsoItem['name']) ?>" loading="lazy">
+                  <button class="quick-add" data-quick-add data-item-id="<?= $alsoId ?>">Add <?= money($alsoPrice, $pdo, false) ?></button>
+                </div>
+                <div class="also-body">
+                  <h4><?= e($alsoItem['name']) ?></h4>
+                  <span class="price"><?= money($alsoPrice, $pdo) ?></span>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php endif; ?>
       </div>
 
       <aside class="sticky-col">

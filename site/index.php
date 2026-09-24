@@ -22,6 +22,9 @@ $badgeDefs = game_badge_defs();
 include __DIR__ . '/includes/header.php';
 ?>
 
+<div class="layout-magazine">
+  <div class="mag-left">
+
 <section class="hero">
   <div class="hero-slider">
     <div class="hs-track" data-hs-track>
@@ -92,6 +95,86 @@ include __DIR__ . '/includes/header.php';
   <?php endif; ?>
 </section>
 
+<?php if ($featured):
+  $editorCollage = array_slice($featured, 0, 3);
+  $editorLarge = $editorCollage[0] ?? null;
+  $editorSmall1 = $editorCollage[1] ?? null;
+  $editorSmall2 = $editorCollage[2] ?? null;
+  $carouselFeatured = array_slice($featured, 3);
+?>
+<section class="section-tight reveal">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Editor's Pick</span>
+        <h2>Chef's selections this week</h2>
+        <p>Fresh picks from our kitchen — tap the quick-add button to add any dish straight to your order.</p>
+      </div>
+      <a class="link-arrow" href="<?= e(base_url('menu.php')) ?>">See the full menu</a>
+    </div>
+    <div class="editor-collage">
+      <?php if ($editorLarge): ?>
+        <div class="ec-large">
+          <?= dish_markup($editorLarge, ['show_cat' => true]) ?>
+          <?= dish_markup($editorLarge, ['layout' => 'feed']) ?>
+        </div>
+      <?php endif; ?>
+      <div class="ec-small">
+        <?php if ($editorSmall1): ?>
+          <div class="ec-small-item">
+            <?= dish_markup($editorSmall1, ['show_cat' => true]) ?>
+            <?= dish_markup($editorSmall1, ['layout' => 'feed']) ?>
+          </div>
+        <?php endif; ?>
+        <?php if ($editorSmall2): ?>
+          <div class="ec-small-item">
+            <?= dish_markup($editorSmall2, ['show_cat' => true]) ?>
+            <?= dish_markup($editorSmall2, ['layout' => 'feed']) ?>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
+    <div class="feed-grid editor-feed mobile-only">
+      <?php foreach ($editorCollage as $item): ?>
+        <?= dish_markup($item, ['layout' => 'feed']) ?>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</section>
+
+<?php if ($carouselFeatured): ?>
+<section class="section-tight reveal late">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <h2>More favourites this week</h2>
+        <p>Swipe through the rest of our top picks.</p>
+      </div>
+    </div>
+    <div class="carousel">
+      <button class="carousel-prev" data-carousel-prev aria-label="Previous">‹</button>
+      <div class="carousel-viewport">
+        <div class="carousel-track" data-carousel-track>
+          <?php foreach ($carouselFeatured as $item): ?>
+            <div class="carousel-item">
+              <?= dish_markup($item, ['show_cat' => true]) ?>
+              <?= dish_markup($item, ['layout' => 'feed']) ?>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <button class="carousel-next" data-carousel-next aria-label="Next">›</button>
+    </div>
+    <div class="feed-grid carousel-feed mobile-only">
+      <?php foreach ($carouselFeatured as $item): ?>
+        <?= dish_markup($item, ['layout' => 'feed']) ?>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
+
+<?php else: ?>
 <section class="section-tight reveal">
   <div class="wrap">
     <div class="section-head">
@@ -101,39 +184,18 @@ include __DIR__ . '/includes/header.php';
       </div>
       <a class="link-arrow" href="<?= e(base_url('menu.php')) ?>">See the full menu</a>
     </div>
-    <?php if ($featured): ?>
-    <div class="carousel">
-      <button class="carousel-prev" data-carousel-prev aria-label="Previous">‹</button>
-      <div class="carousel-viewport">
-        <div class="carousel-track" data-carousel-track>
-          <?php foreach ($featured as $item): ?>
-            <article class="dish"<?= dish_attr($item, $item['category_name']) ?>>
-              <div class="dish-photo" data-open-dish>
-                <span class="dish-cat"><?= e($item['category_name']) ?></span>
-                <?php if (!empty($item['is_featured'])): ?><span class="dish-hot flame">🔥 HOT</span><?php endif; ?>
-                <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy">
-              </div>
-              <div class="dish-body">
-                <h3 data-open-dish><?= e($item['name']) ?></h3>
-                <p><?= e($item['description']) ?></p>
-                <div class="dish-foot">
-                  <span class="price <?= $item['price'] === null ? 'ask' : '' ?>"><?= $item['price'] === null ? 'Price on request' : money((float)$item['price'], $pdo) ?></span>
-                  <?= add_control($pdo, $item) ?>
-                </div>
-              </div>
-            </article>
-          <?php endforeach; ?>
-        </div>
-      </div>
-      <button class="carousel-next" data-carousel-next aria-label="Next">›</button>
-    </div>
-    <?php else: ?>
     <div class="dish-grid">
       <p class="hint">Check back soon — the chef is plating up the week's favourites.</p>
     </div>
-    <?php endif; ?>
   </div>
 </section>
+<?php endif; ?>
+
+  </div>
+  <div class="mag-right">
+    <?= render_sticky_rail() ?>
+  </div>
+</div>
 
 <section id="rewards" class="section section-sand reveal late">
   <div class="wrap">

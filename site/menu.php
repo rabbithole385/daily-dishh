@@ -25,6 +25,9 @@ $ok = flash_get('success');
 $err = flash_get('error');
 ?>
 
+<div class="layout-magazine">
+  <div class="mag-left">
+
 <div class="page-head">
   <div class="wrap">
     <h1>Menu</h1>
@@ -77,21 +80,13 @@ $err = flash_get('error');
 
       <?php if ($withPhoto): ?>
       <div class="dish-grid" data-group>
-        <?php foreach ($withPhoto as $item): ?>
-          <article class="dish"<?= dish_attr($item, $cat['name']) ?> data-search="<?= e(strtolower($item['name'] . ' ' . $item['description'] . ' ' . $cat['name'])) ?>">
-            <div class="dish-photo" data-open-dish>
-              <?php if (!empty($item['is_featured'])): ?><span class="dish-hot flame">🔥 HOT</span><?php endif; ?>
-              <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy">
-            </div>
-            <div class="dish-body">
-              <h3 data-open-dish><?= e($item['name']) ?></h3>
-              <p><?= e($item['description']) ?></p>
-              <div class="dish-foot">
-                <span class="price <?= $item['price'] === null ? 'ask' : '' ?>"><?= $item['price'] === null ? 'Price on request' : money((float)$item['price'], $pdo) ?></span>
-                <?= add_control($pdo, $item) ?>
-              </div>
-            </div>
-          </article>
+        <?php foreach ($withPhoto as $item):
+          $searchStr = $item['name'] . ' ' . $item['description'] . ' ' . $cat['name'];
+        ?>
+          <div class="grid-item-pair">
+            <?= dish_markup($item, ['cat' => $cat['name'], 'search' => $searchStr]) ?>
+            <?= dish_markup($item, ['cat' => $cat['name'], 'layout' => 'feed', 'search' => $searchStr]) ?>
+          </div>
         <?php endforeach; ?>
       </div>
       <?php endif; ?>
@@ -118,6 +113,12 @@ $err = flash_get('error');
   <div class="menu-empty" id="menuEmpty" hidden>
     <h2>Nothing matches that</h2>
     <p>Try a shorter word like “rice” or “soup”, or call the kitchen and ask.</p>
+  </div>
+</div>
+
+  </div>
+  <div class="mag-right">
+    <?= render_sticky_rail() ?>
   </div>
 </div>
 

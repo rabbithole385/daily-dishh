@@ -32,6 +32,27 @@ function respond(PDO $pdo, bool $ok, string $message, string $back, int $itemId 
     exit;
 }
 
+if (($_GET['view'] ?? '') === 'json') {
+    header('Content-Type: application/json');
+    $subtotal = cart_subtotal($pdo);
+    $linesPayload = [];
+    foreach (cart_items($pdo) as $line) {
+        $linesPayload[] = [
+            'name' => $line['item']['name'],
+            'qty' => (int)$line['qty'],
+            'line_total' => (float)$line['line_total'],
+            'line_total_text' => money($line['line_total'], $pdo),
+        ];
+    }
+    echo json_encode([
+        'count' => cart_count(),
+        'subtotal' => $subtotal,
+        'subtotal_text' => money($subtotal, $pdo),
+        'lines' => $linesPayload,
+    ]);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !csrf_check()) {
     respond($pdo, false, 'Your session expired. Refresh the page and try again.', $back);
 }

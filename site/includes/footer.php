@@ -76,6 +76,8 @@ $cartCount = cart_count();
   </div>
 </footer>
 
-<script src="<?= e(base_url('assets/js/app.js')) ?>?v=6" defer></script>
+<?php include __DIR__ . '/mobile-tab-bar.php'; ?>
+
+<script src="<?= e(base_url('assets/js/app.js')) ?>?v=7" defer></script>
 </body>
 </html>
