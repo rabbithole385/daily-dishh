@@ -4,7 +4,8 @@ $rc       = get_setting($pdo, 'rc_number', '');
 $address  = get_setting($pdo, 'address', '');
 $phone1   = get_setting($pdo, 'phone_primary', '');
 $phone2   = get_setting($pdo, 'phone_secondary', '');
-$hours    = get_setting($pdo, 'hours', '');
+$hours    = get_setting($pdo, 'hours', 'Mon – Sat: 9:00 AM – 6:00 PM');
+$hoursNote = get_setting($pdo, 'hours_note', 'Closed Sundays');
 $whatsapp = get_setting($pdo, 'whatsapp', '');
 $ig       = get_setting($pdo, 'instagram_url', '');
 $fb       = get_setting($pdo, 'facebook_url', '');
@@ -56,6 +57,7 @@ $cartCount = cart_count();
       <h4>Visit</h4>
       <p><?= e($address) ?></p>
       <p><?= e($hours) ?></p>
+      <?php if ($hoursNote): ?><p style="font-size:.88rem;color:var(--ink-soft);margin-top:-6px;"><?= e($hoursNote) ?></p><?php endif; ?>
     </div>
     <div>
       <h4>Order by phone</h4>
@@ -78,6 +80,6 @@ $cartCount = cart_count();
 
 <?php include __DIR__ . '/mobile-tab-bar.php'; ?>
 
-<script src="<?= e(base_url('assets/js/app.js')) ?>?v=7" defer></script>
+<script src="<?= e(base_url('assets/js/app.js')) ?>?v=8" defer></script>
 </body>
 </html>

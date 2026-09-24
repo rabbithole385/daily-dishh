@@ -707,96 +707,99 @@
 
   /* ------------------------------ Hero food slider ------------------------------ */
   (function () {
-    var track = document.querySelector('[data-hs-track]');
-    var slides = track ? Array.from(track.children) : [];
-    if (!track || slides.length < 2) return;
-    var dotsWrap = document.querySelector('[data-hs-dots]');
-    var dots = dotsWrap ? Array.from(dotsWrap.querySelectorAll('button')) : [];
-    var prev = document.querySelector('[data-hs-prev]');
-    var next = document.querySelector('[data-hs-next]');
-    var i = 0;
-    function go(newI, user) {
-      i = (newI + slides.length) % slides.length;
-      track.style.transform = 'translateX(' + (-100 * i) + '%)';
-      slides.forEach(function (s, k) { s.classList.toggle('on', k === i); });
-      dots.forEach(function (d, k) { d.classList.toggle('on', k === i); });
-      if (user) stopAuto();
+    function init() {
+      var track = document.querySelector('[data-hs-track]');
+      var slides = track ? Array.from(track.children) : [];
+      if (!track || slides.length < 2) return;
+      var dotsWrap = document.querySelector('[data-hs-dots]');
+      var dots = dotsWrap ? Array.from(dotsWrap.querySelectorAll('button')) : [];
+      var prev = document.querySelector('[data-hs-prev]');
+      var next = document.querySelector('[data-hs-next]');
+      var i = 0;
+      function go(newI, user) {
+        i = (newI + slides.length) % slides.length;
+        track.style.transform = 'translateX(' + (-100 * i) + '%)';
+        slides.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+        dots.forEach(function (d, k) { d.classList.toggle('on', k === i); });
+        if (user) stopAuto();
+      }
+      dots.forEach(function (d, k) { d.addEventListener('click', function () { go(k, true); }); });
+      if (prev) prev.addEventListener('click', function () { go(i - 1, true); });
+      if (next) next.addEventListener('click', function () { go(i + 1, true); });
+      function startAuto() {
+        if (prefersReduced) return;
+        stopAuto();
+        window.__hsTimer = setInterval(function () { go(i + 1); }, 5200);
+      }
+      function stopAuto() { if (window.__hsTimer) { clearInterval(window.__hsTimer); window.__hsTimer = null; } }
+      var slider = track.parentElement;
+      if (slider) {
+        slider.addEventListener('mouseenter', stopAuto);
+        slider.addEventListener('mouseleave', startAuto);
+        slider.tabIndex = 0;
+        slider.addEventListener('keydown', function (e) {
+          if (e.key === 'ArrowLeft') go(i - 1, true);
+          else if (e.key === 'ArrowRight') go(i + 1, true);
+        });
+      }
+      go(0);
+      startAuto();
     }
-    dots.forEach(function (d, k) { d.addEventListener('click', function () { go(k, true); }); });
-    if (prev) prev.addEventListener('click', function () { go(i - 1, true); });
-    if (next) next.addEventListener('click', function () { go(i + 1, true); });
-    function startAuto() {
-      if (prefersReduced) return;
-      stopAuto();
-      window.__hsTimer = setInterval(function () { go(i + 1); }, 5200);
-    }
-    function stopAuto() { if (window.__hsTimer) { clearInterval(window.__hsTimer); window.__hsTimer = null; } }
-    var slider = track.parentElement;
-    if (slider) {
-      slider.addEventListener('mouseenter', stopAuto);
-      slider.addEventListener('mouseleave', startAuto);
-    }
-    // keyboard arrows on focus
-    if (slider) {
-      slider.tabIndex = 0;
-      slider.addEventListener('keydown', function (e) {
-        if (e.key === 'ArrowLeft') go(i - 1, true);
-        else if (e.key === 'ArrowRight') go(i + 1, true);
-      });
-    }
-    go(0);
-    startAuto();
+    var ric = ('requestIdleCallback' in window) ? requestIdleCallback : function (fn) { setTimeout(fn, 0); };
+    ric(init, { timeout: 1500 });
   })();
 
   /* ------------------------------ Featured dish carousel ------------------------------ */
   (function () {
-    var track = document.querySelector('[data-carousel-track]');
-    if (!track) return;
-    var left = document.querySelector('[data-carousel-prev]');
-    var right = document.querySelector('[data-carousel-next]');
-    function scrollBy(delta) { track.scrollBy({ left: delta, behavior: prefersReduced ? 'auto' : 'smooth' }); }
-    if (left) left.addEventListener('click', function () { scrollBy(-340); });
-    if (right) right.addEventListener('click', function () { scrollBy(340); });
-    if (!prefersReduced) {
-      // subtle idle drift: pause on hover
-      var paused = false;
-      track.addEventListener('mouseenter', function () { paused = true; });
-      track.addEventListener('mouseleave', function () { paused = false; });
-      setInterval(function () { if (!paused) scrollBy(1); }, 90);
+    function init() {
+      var track = document.querySelector('[data-carousel-track]');
+      if (!track) return;
+      var left = document.querySelector('[data-carousel-prev]');
+      var right = document.querySelector('[data-carousel-next]');
+      function scrollByFn(delta) { track.scrollBy({ left: delta, behavior: prefersReduced ? 'auto' : 'smooth' }); }
+      if (left) left.addEventListener('click', function () { scrollByFn(-340); });
+      if (right) right.addEventListener('click', function () { scrollByFn(340); });
+      if (!prefersReduced) {
+        var paused = false;
+        track.addEventListener('mouseenter', function () { paused = true; });
+        track.addEventListener('mouseleave', function () { paused = false; });
+        setInterval(function () { if (!paused) scrollByFn(1); }, 90);
+      }
     }
+    var ric = ('requestIdleCallback' in window) ? requestIdleCallback : function (fn) { setTimeout(fn, 0); };
+    ric(init, { timeout: 1500 });
   })();
 
   /* ================================================================
      Refined interactions — stagger, scroll reveal, Ken Burns hover
      ================================================================ */
   (function () {
-    /* ---- 1. Grid stagger numberer: assign --g-i and --dish-i for waterfall reveals ---- */
-    var containers = document.querySelectorAll(
-      '.dish-grid, .badges, .steps, .rc-stats, .gallery, .footer-grid, .rd-stats, .mrows, .chips'
-    );
-    containers.forEach(function (grp) {
-      var kids = grp.children;
-      for (var k = 0; k < kids.length; k++) {
-        kids[k].style.setProperty('--g-i', String(k));
-        kids[k].style.setProperty('--dish-i', String(k));
-        if (!kids[k].classList.contains('reveal')) kids[k].classList.add('reveal', 'gs-fast');
-      }
-    });
-  })();
-
-  /* ------------------------------ Scroll Reveal ------------------------------ */
-  (function () {
-    var items = document.querySelectorAll('.reveal');
-    if (!items.length || !('IntersectionObserver' in window)) {
-      items.forEach(function (i) { i.classList.add('on'); });
-      return;
-    }
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
-        if (en.isIntersecting) { en.target.classList.add('on'); io.unobserve(en.target); }
+    function init() {
+      var containers = document.querySelectorAll(
+        '.dish-grid, .badges, .steps, .rc-stats, .gallery, .footer-grid, .rd-stats, .mrows, .chips'
+      );
+      containers.forEach(function (grp) {
+        var kids = grp.children;
+        for (var k = 0; k < kids.length; k++) {
+          kids[k].style.setProperty('--g-i', String(k));
+          kids[k].style.setProperty('--dish-i', String(k));
+          if (!kids[k].classList.contains('reveal')) kids[k].classList.add('reveal', 'gs-fast');
+        }
       });
-    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-    items.forEach(function (el) { io.observe(el); });
+      var items = document.querySelectorAll('.reveal');
+      if (!items.length || !('IntersectionObserver' in window)) {
+        items.forEach(function (i) { i.classList.add('on'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) { en.target.classList.add('on'); io.unobserve(en.target); }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      items.forEach(function (el) { io.observe(el); });
+    }
+    var ric = ('requestIdleCallback' in window) ? requestIdleCallback : function (fn) { setTimeout(fn, 0); };
+    ric(init, { timeout: 1500 });
   })();
 
   /* ------------------------------ Counter rolls on reward reveal ------------------------------ */

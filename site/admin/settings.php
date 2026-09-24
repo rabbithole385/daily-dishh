@@ -15,6 +15,7 @@ $fields = [
     'rc_number' => 'RC Number',
     'address' => 'Address',
     'hours' => 'Opening hours',
+    'hours_note' => 'Hours note (small line under opening hours)',
     'phone_primary' => 'Primary phone',
     'phone_secondary' => 'Secondary phone',
     'whatsapp' => 'WhatsApp number (with country code, digits only, e.g. 2348021333972)',

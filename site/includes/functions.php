@@ -377,7 +377,7 @@ function dish_markup(array $item, array $opts = []): string
 <article class="feed-tile"<?= dish_attr($item, $catName) ?><?= $searchAttr ?>>
   <div class="ft-img">
     <?php if ($isFeatured): ?><span class="dish-hot flame">🔥 HOT</span><?php endif; ?>
-    <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy">
+    <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy" decoding="async" width="400" height="500">
     <?php if ($hasPrice): ?>
       <button class="quick-add feed-add" data-quick-add data-item-id="<?= $itemId ?>">Add <?= money($price, $pdo, false) ?></button>
     <?php endif; ?>
@@ -396,7 +396,7 @@ function dish_markup(array $item, array $opts = []): string
   <div class="dish-photo" data-open-dish>
     <?php if (!empty($opts['show_cat']) && $catName): ?><span class="dish-cat"><?= e($catName) ?></span><?php endif; ?>
     <?php if ($isFeatured): ?><span class="dish-hot flame">🔥 HOT</span><?php endif; ?>
-    <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy">
+    <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy" decoding="async" width="520" height="320">
     <?php if ($hasPrice): ?>
       <button class="quick-add" data-quick-add data-item-id="<?= $itemId ?>">Add <?= money($price, $pdo, false) ?></button>
     <?php endif; ?>
@@ -436,6 +436,7 @@ function menu_row(array $item, array $opts = []): string
 
 function render_sticky_rail(): string
 {
+    global $pdo;
     ob_start();
     include __DIR__ . '/sticky-order-rail.php';
     return ob_get_clean();
@@ -457,13 +458,17 @@ function game_session_id(): string
 
 function game_get_raw(PDO $pdo): array
 {
+    static $cache = [];
     $sid = game_session_id();
+    if (isset($cache[$sid])) {
+        return $cache[$sid];
+    }
     $stmt = $pdo->prepare("SELECT gvalue FROM gamification WHERE gkey = ?");
     $stmt->execute(["state:$sid"]);
     $row = $stmt->fetchColumn();
     $data = $row ? json_decode($row, true) : null;
     if (!is_array($data)) $data = [];
-    return $data + [
+    $cache[$sid] = $data + [
         'points' => 0,
         'total_spent' => 0,
         'orders' => 0,
@@ -474,11 +479,14 @@ function game_get_raw(PDO $pdo): array
         'lucky_reward' => null,
         'xp' => 0,
     ];
+    return $cache[$sid];
 }
 
 function game_save_raw(PDO $pdo, array $data): void
 {
+    static $cache = [];
     $sid = game_session_id();
+    $cache[$sid] = $data;
     $stmt = $pdo->prepare("INSERT INTO gamification (gkey, gvalue) VALUES (?, ?)
         ON CONFLICT(gkey) DO UPDATE SET gvalue = excluded.gvalue");
     $stmt->execute(["state:$sid", json_encode($data, JSON_UNESCAPED_UNICODE)]);

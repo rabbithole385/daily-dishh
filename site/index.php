@@ -4,7 +4,8 @@ require_once __DIR__ . '/includes/config.php';
 $pageTitle = null;
 $active = 'home';
 $phone = get_setting($pdo, 'phone_primary', '');
-$hours = get_setting($pdo, 'hours', '');
+$hours = get_setting($pdo, 'hours', 'Mon – Sat: 9:00 AM – 6:00 PM');
+$hoursNote = get_setting($pdo, 'hours_note', 'Closed Sundays');
 $eta   = get_setting($pdo, 'delivery_eta', '35–60 min');
 $zones = delivery_zones($pdo);
 
@@ -29,25 +30,27 @@ include __DIR__ . '/includes/header.php';
   <div class="hero-slider">
     <div class="hs-track" data-hs-track>
       <div class="hs-slide on">
-        <img src="<?= e(site_photo($pdo, 'hero_1', 'swallow-soup-plain.jpg')) ?>" alt="Egusi soup with swallow" fetchpriority="high">
+        <img src="<?= e(site_photo($pdo, 'hero_1', 'swallow-soup-plain.jpg')) ?>" alt="Egusi soup with swallow" fetchpriority="high" decoding="async" width="1600" height="900" sizes="100vw">
         <div class="hs-overlay"></div>
         <div class="hs-caption">
           <div class="wrap">
+            <div class="eyebrow" style="margin-bottom:12px;opacity:.94;">The Kitchen Table — Daily Dish Abuja</div>
             <h1 class="hero-title">Your everyday delicacy<span class="line2">at your door.</span></h1>
             <p class="hero-sub">Egusi and swallow, smoky party jollof, pepper fish in foil. Cooked to order in Gwarinpa and delivered across Abuja.</p>
             <div class="hero-actions">
               <a href="<?= e(base_url('menu.php')) ?>" class="btn btn-primary">Start your order</a>
               <a href="tel:<?= e(tel($phone)) ?>" class="btn btn-ghost">Call <?= e($phone) ?></a>
             </div>
-            <p class="hero-note"><span class="dot-open"></span><?= e($hours) ?></p>
+            <p class="hero-note"><span class="dot-open"></span><?= e($hours) ?><?php if ($hoursNote): ?> · <small style="opacity:.82;"><?= e($hoursNote) ?></small><?php endif; ?></p>
           </div>
         </div>
       </div>
       <div class="hs-slide">
-        <img src="<?= e(site_photo($pdo, 'hero_2', 'grilled-foil.jpg')) ?>" alt="Foil-grilled pepper fish">
+        <img src="<?= e(site_photo($pdo, 'hero_2', 'grilled-foil.jpg')) ?>" alt="Foil-grilled pepper fish" loading="lazy" decoding="async" width="1600" height="900" sizes="100vw">
         <div class="hs-overlay"></div>
         <div class="hs-caption">
           <div class="wrap">
+            <div class="eyebrow" style="margin-bottom:12px;opacity:.94;">The Kitchen Table — Daily Dish Abuja</div>
             <h1 class="hero-title">Smoky grills &<span class="line2">peppered goodness.</span></h1>
             <p class="hero-sub">Fresh fish, chicken and beef grilled hot with our signature pepper blend. Sealed in foil, delivered juicy.</p>
             <div class="hero-actions">
@@ -57,10 +60,11 @@ include __DIR__ . '/includes/header.php';
         </div>
       </div>
       <div class="hs-slide">
-        <img src="<?= e(site_photo($pdo, 'hero_3', 'jollof-trays.jpg')) ?>" alt="Trays of party jollof rice with chicken">
+        <img src="<?= e(site_photo($pdo, 'hero_3', 'jollof-trays.jpg')) ?>" alt="Trays of party jollof rice with chicken" loading="lazy" decoding="async" width="1600" height="900" sizes="100vw">
         <div class="hs-overlay"></div>
         <div class="hs-caption">
           <div class="wrap">
+            <div class="eyebrow" style="margin-bottom:12px;opacity:.94;">The Kitchen Table — Daily Dish Abuja</div>
             <h1 class="hero-title">Feeding a crowd?<span class="line2">We do trays.</span></h1>
             <p class="hero-sub">Party trays of jollof, fried rice and buckets of soup, made to order for events and offices.</p>
             <div class="hero-actions">

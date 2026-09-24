@@ -23,6 +23,9 @@ function get_db(): PDO
     $pdo = new PDO('sqlite:' . DB_PATH);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->exec('PRAGMA foreign_keys = ON');
+    $pdo->exec('PRAGMA journal_mode = WAL');
+    $pdo->exec('PRAGMA synchronous = NORMAL');
+    $pdo->exec('PRAGMA cache_size = -8192');
 
     create_schema($pdo);
 
@@ -30,7 +33,34 @@ function get_db(): PDO
         seed_data($pdo);
     }
 
+    ensure_latest_defaults($pdo);
+
     return $pdo;
+}
+
+function ensure_latest_defaults(PDO $pdo): void
+{
+    $oldHours = 'Mon – Sun: 8:00 AM – 9:00 PM';
+    $newHours = 'Mon – Sat: 9:00 AM – 6:00 PM';
+    $hoursNote = 'Closed Sundays';
+
+    $stmt = $pdo->prepare("SELECT svalue FROM settings WHERE skey = ?");
+    $stmt->execute(['hours']);
+    $curHours = $stmt->fetchColumn();
+    if ($curHours === false || $curHours === $oldHours) {
+        $pdo->prepare("INSERT INTO settings (skey, svalue) VALUES (?, ?)
+            ON CONFLICT(skey) DO UPDATE SET svalue = excluded.svalue")
+            ->execute(['hours', $newHours]);
+    }
+
+    $stmt2 = $pdo->prepare("SELECT svalue FROM settings WHERE skey = ?");
+    $stmt2->execute(['hours_note']);
+    $curNote = $stmt2->fetchColumn();
+    if ($curNote === false || $curNote === '') {
+        $pdo->prepare("INSERT INTO settings (skey, svalue) VALUES (?, ?)
+            ON CONFLICT(skey) DO UPDATE SET svalue = excluded.svalue")
+            ->execute(['hours_note', $hoursNote]);
+    }
 }
 
 function create_schema(PDO $pdo): void
@@ -92,6 +122,21 @@ function create_schema(PDO $pdo): void
     )");
 
     migrate_schema($pdo);
+
+    ensure_indexes($pdo);
+}
+
+function ensure_indexes(PDO $pdo): void
+{
+    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items(category_id)");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_menu_items_available ON menu_items(is_available)");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_menu_items_featured ON menu_items(is_featured)");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_menu_items_cat_avail ON menu_items(category_id, is_available)");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at)");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_order_items_menu ON order_items(menu_item_id)");
+    $pdo->exec("CREATE INDEX IF NOT EXISTS idx_gamification_key ON gamification(gkey)");
 }
 
 /**
@@ -141,7 +186,8 @@ function seed_data(PDO $pdo): void
         'phone_secondary'=> '09061703148',
         'whatsapp'       => '2348021333972',
         'email'          => '',
-        'hours'          => 'Mon – Sun: 8:00 AM – 9:00 PM',
+        'hours'          => 'Mon – Sat: 9:00 AM – 6:00 PM',
+        'hours_note'     => 'Closed Sundays',
         'facebook_url'   => '',
         'instagram_url'  => '',
         'currency_symbol'=> '₦',

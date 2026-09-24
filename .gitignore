@@ -1,2 +1,10 @@
 site/data/*.sqlite
+site/data/*.sqlite-wal
+site/data/*.sqlite-shm
+site/data/*.sqlite-journal
 .DS_Store
+.trae/
+.vscode/
+*.swp
+*.swo
+node_modules/
