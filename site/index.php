@@ -23,9 +23,6 @@ $badgeDefs = game_badge_defs();
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="layout-magazine">
-  <div class="mag-left">
-
 <section class="hero">
   <div class="hero-slider">
     <div class="hs-track" data-hs-track>
@@ -192,12 +189,6 @@ include __DIR__ . '/includes/header.php';
   </div>
 </section>
 <?php endif; ?>
-
-  </div>
-  <div class="mag-right">
-    <?= render_sticky_rail() ?>
-  </div>
-</div>
 
 <section id="rewards" class="section section-sand reveal late">
   <div class="wrap">

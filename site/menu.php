@@ -25,9 +25,6 @@ $ok = flash_get('success');
 $err = flash_get('error');
 ?>
 
-<div class="layout-magazine">
-  <div class="mag-left">
-
 <div class="page-head">
   <div class="wrap">
     <h1>Menu</h1>
@@ -113,12 +110,6 @@ $err = flash_get('error');
   <div class="menu-empty" id="menuEmpty" hidden>
     <h2>Nothing matches that</h2>
     <p>Try a shorter word like “rice” or “soup”, or call the kitchen and ask.</p>
-  </div>
-</div>
-
-  </div>
-  <div class="mag-right">
-    <?= render_sticky_rail() ?>
   </div>
 </div>
 
