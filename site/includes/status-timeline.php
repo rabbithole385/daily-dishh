@@ -17,14 +17,14 @@ $statusMap = [
 $mappedStatus = $statusMap[$orderStatus] ?? $orderStatus;
 $activeIdx = 0;
 foreach ($stages as $i => $s) { if ($s['key'] === $mappedStatus) { $activeIdx = $i; break; } }
-if ($mappedStatus === 'delivered') $activeIdx = count($stages) - 1;
+$isDelivered = $mappedStatus === 'delivered';
+if ($isDelivered) $activeIdx = count($stages) - 1;
 ?>
 <ul class="status-timeline">
   <?php foreach ($stages as $i => $s):
     $cls = '';
-    if ($i < $activeIdx) $cls = 'done';
+    if ($isDelivered || $i < $activeIdx) $cls = 'done';
     elseif ($i === $activeIdx) $cls = 'active';
-    elseif ($mappedStatus === 'delivered' && $i <= $activeIdx) $cls = 'done';
   ?>
     <li class="tl-stage <?= $cls ?>">
       <div class="tl-dot"><?= $s['ic'] ?></div>

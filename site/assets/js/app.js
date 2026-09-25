@@ -961,20 +961,6 @@
     }, 500);
   })();
 
-  /* ------------------------------ Gentle ambient emoji rain on home ------------------------------ */
-  if (body.classList.contains('page-home') && !prefersReduced) {
-    var rainTimer;
-    function ambientRain() {
-      emojiRain(['🍛', '🔥', '⭐', '🥘', '🍗'], 2 + Math.floor(Math.random() * 3));
-      rainTimer = setTimeout(ambientRain, 9000 + Math.random() * 8000);
-    }
-    rainTimer = setTimeout(ambientRain, 6000);
-    // Pause when tab hidden
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden && rainTimer) { clearTimeout(rainTimer); rainTimer = null; }
-      else if (!document.hidden && !rainTimer) { rainTimer = setTimeout(ambientRain, 3000); }
-    });
-  }
 
   (function () {
     var co = document.getElementById('checkoutForm');

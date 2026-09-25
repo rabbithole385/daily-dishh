@@ -177,6 +177,9 @@ include __DIR__ . '/includes/header.php';
       <button type="submit" class="btn btn-primary btn-block" style="margin-top:20px;min-height:56px;font-size:1.05rem;">Place order</button>
     </aside>
   </form>
+  <div class="floating-place-order">
+    <button type="submit" form="checkoutForm" class="btn btn-primary btn-block">Place order</button>
+  </div>
   <div style="height:60px"></div>
 </div>
 

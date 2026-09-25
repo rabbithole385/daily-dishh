@@ -31,11 +31,6 @@ $cancelled = $order['status'] === 'cancelled';
 
   <?php if (!$cancelled): ?>
   <?php $orderStatus = $order['status']; include __DIR__ . '/status-timeline.php'; ?>
-  <ol class="timeline">
-    <?php foreach ($flow as $i => $s): $cls = $i < $pos ? 'done' : ($i === $pos ? ($s === 'delivered' ? 'done' : 'now') : ''); ?>
-      <li class="<?= $cls ?>"><span class="dot"></span><strong><?= e($labels[$s][0]) ?></strong><small><?= e($labels[$s][1]) ?></small></li>
-    <?php endforeach; ?>
-  </ol>
   <?php else: ?>
     <p class="docket-note">This order was cancelled. Call the kitchen if that is a surprise.</p>
   <?php endif; ?>

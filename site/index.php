@@ -30,11 +30,10 @@ include __DIR__ . '/includes/header.php';
   <div class="hero-slider">
     <div class="hs-track" data-hs-track>
       <div class="hs-slide on">
-        <img src="<?= e(site_photo($pdo, 'hero_1', 'swallow-soup-plain.jpg')) ?>" alt="Egusi soup with swallow" fetchpriority="high" decoding="async" width="1600" height="900" sizes="100vw">
+        <img src="<?= e(site_photo($pdo, 'hero_1', 'swallow-soup-plain.jpg')) ?>" alt="Egusi soup with swallow" fetchpriority="high" decoding="async">
         <div class="hs-overlay"></div>
         <div class="hs-caption">
           <div class="wrap">
-            <div class="eyebrow" style="margin-bottom:12px;opacity:.94;">The Kitchen Table — Daily Dish Abuja</div>
             <h1 class="hero-title">Your everyday delicacy<span class="line2">at your door.</span></h1>
             <p class="hero-sub">Egusi and swallow, smoky party jollof, pepper fish in foil. Cooked to order in Gwarinpa and delivered across Abuja.</p>
             <div class="hero-actions">
@@ -46,11 +45,10 @@ include __DIR__ . '/includes/header.php';
         </div>
       </div>
       <div class="hs-slide">
-        <img src="<?= e(site_photo($pdo, 'hero_2', 'grilled-foil.jpg')) ?>" alt="Foil-grilled pepper fish" loading="lazy" decoding="async" width="1600" height="900" sizes="100vw">
+        <img src="<?= e(site_photo($pdo, 'hero_2', 'grilled-foil.jpg')) ?>" alt="Foil-grilled pepper fish" loading="lazy" decoding="async">
         <div class="hs-overlay"></div>
         <div class="hs-caption">
           <div class="wrap">
-            <div class="eyebrow" style="margin-bottom:12px;opacity:.94;">The Kitchen Table — Daily Dish Abuja</div>
             <h1 class="hero-title">Smoky grills &<span class="line2">peppered goodness.</span></h1>
             <p class="hero-sub">Fresh fish, chicken and beef grilled hot with our signature pepper blend. Sealed in foil, delivered juicy.</p>
             <div class="hero-actions">
@@ -60,7 +58,7 @@ include __DIR__ . '/includes/header.php';
         </div>
       </div>
       <div class="hs-slide">
-        <img src="<?= e(site_photo($pdo, 'hero_3', 'jollof-trays.jpg')) ?>" alt="Trays of party jollof rice with chicken" loading="lazy" decoding="async" width="1600" height="900" sizes="100vw">
+        <img src="<?= e(site_photo($pdo, 'hero_3', 'jollof-trays.jpg')) ?>" alt="Trays of party jollof rice with chicken" loading="lazy" decoding="async">
         <div class="hs-overlay"></div>
         <div class="hs-caption">
           <div class="wrap">

@@ -377,7 +377,7 @@ function dish_markup(array $item, array $opts = []): string
 <article class="feed-tile"<?= dish_attr($item, $catName) ?><?= $searchAttr ?>>
   <div class="ft-img">
     <?php if ($isFeatured): ?><span class="dish-hot flame">🔥 HOT</span><?php endif; ?>
-    <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy" decoding="async" width="400" height="500">
+    <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy" decoding="async">
     <?php if ($hasPrice): ?>
       <button class="quick-add feed-add" data-quick-add data-item-id="<?= $itemId ?>">Add <?= money($price, $pdo, false) ?></button>
     <?php endif; ?>
@@ -396,7 +396,7 @@ function dish_markup(array $item, array $opts = []): string
   <div class="dish-photo" data-open-dish>
     <?php if (!empty($opts['show_cat']) && $catName): ?><span class="dish-cat"><?= e($catName) ?></span><?php endif; ?>
     <?php if ($isFeatured): ?><span class="dish-hot flame">🔥 HOT</span><?php endif; ?>
-    <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy" decoding="async" width="520" height="320">
+    <img src="<?= e(img_url($item['image'])) ?>" alt="<?= e($item['name']) ?>" loading="lazy" decoding="async">
     <?php if ($hasPrice): ?>
       <button class="quick-add" data-quick-add data-item-id="<?= $itemId ?>">Add <?= money($price, $pdo, false) ?></button>
     <?php endif; ?>
