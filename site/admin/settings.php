@@ -29,13 +29,20 @@ $deliveryFields = [
     'bank_account_name' => 'Account name',
     'bank_account_number' => 'Account number',
 ];
+$llmFields = [
+    'llm_provider' => 'AI Assistant provider',
+    'llm_model' => 'Model name (leave blank for defaults)',
+];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_check()) {
         $errors[] = 'Session expired, please try again.';
     } else {
-        foreach ($fields + $deliveryFields as $key => $label) {
+        foreach ($fields + $deliveryFields + $llmFields as $key => $label) {
             set_setting($pdo, $key, trim($_POST[$key] ?? ''));
+        }
+        if (!empty($_POST['llm_api_key'])) {
+            set_setting($pdo, 'llm_api_key', trim($_POST['llm_api_key']));
         }
         set_setting($pdo, 'delivery_zones', trim($_POST['delivery_zones'] ?? ''));
         if (!empty($_POST['new_password'])) {
@@ -54,10 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $values = [];
-foreach ($fields + $deliveryFields as $key => $label) {
+foreach ($fields + $deliveryFields + $llmFields as $key => $label) {
     $values[$key] = get_setting($pdo, $key, '');
 }
 $values['delivery_zones'] = get_setting($pdo, 'delivery_zones', '');
+$values['llm_api_key']    = get_setting($pdo, 'llm_api_key', '');
 
 include __DIR__ . '/includes/admin-header.php';
 ?>
@@ -97,6 +105,29 @@ include __DIR__ . '/includes/admin-header.php';
           <input id="<?= e($key) ?>" name="<?= e($key) ?>" type="text" value="<?= e($values[$key]) ?>">
         </div>
       <?php endforeach; ?>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>AI Assistant — Errands (Errand Boy)</h2>
+    <p style="margin-top:-10px;margin-bottom:18px;color:var(--ink-soft);font-size:.9rem;">The chat widget on the public site uses these settings. If no API key is set, Errands will run on our in-house keyword engine (still works great).</p>
+    <div class="form-grid">
+      <div class="form-row">
+        <label for="llm_provider">Provider</label>
+        <select id="llm_provider" name="llm_provider">
+          <option value="rules"    <?= $values['llm_provider'] === 'rules'    ? 'selected' : '' ?>>Rule engine only (no API key needed)</option>
+          <option value="openai"   <?= $values['llm_provider'] === 'openai'   ? 'selected' : '' ?>>OpenAI</option>
+          <option value="anthropic"<?= $values['llm_provider'] === 'anthropic'? 'selected' : '' ?>>Anthropic</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="llm_api_key">API key<?= $values['llm_api_key'] ? ' (leave blank to keep current)' : '' ?></label>
+        <input id="llm_api_key" name="llm_api_key" type="password" autocomplete="off" placeholder="<?= $values['llm_api_key'] ? '•••••••• current key saved' : 'sk-...' ?>">
+      </div>
+      <div class="form-row">
+        <label for="llm_model">Model (blank = default: <code>gpt-4o-mini</code> / <code>claude-3-5-haiku-latest</code>)</label>
+        <input id="llm_model" name="llm_model" type="text" value="<?= e($values['llm_model']) ?>" placeholder="e.g. gpt-4o-mini">
+      </div>
     </div>
   </div>
 

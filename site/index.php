@@ -115,20 +115,17 @@ include __DIR__ . '/includes/header.php';
       <?php if ($editorLarge): ?>
         <div class="ec-large">
           <?= dish_markup($editorLarge, ['show_cat' => true]) ?>
-          <?= dish_markup($editorLarge, ['layout' => 'feed']) ?>
         </div>
       <?php endif; ?>
       <div class="ec-small">
         <?php if ($editorSmall1): ?>
           <div class="ec-small-item">
             <?= dish_markup($editorSmall1, ['show_cat' => true]) ?>
-            <?= dish_markup($editorSmall1, ['layout' => 'feed']) ?>
           </div>
         <?php endif; ?>
         <?php if ($editorSmall2): ?>
           <div class="ec-small-item">
             <?= dish_markup($editorSmall2, ['show_cat' => true]) ?>
-            <?= dish_markup($editorSmall2, ['layout' => 'feed']) ?>
           </div>
         <?php endif; ?>
       </div>
@@ -157,7 +154,6 @@ include __DIR__ . '/includes/header.php';
           <?php foreach ($carouselFeatured as $item): ?>
             <div class="carousel-item">
               <?= dish_markup($item, ['show_cat' => true]) ?>
-              <?= dish_markup($item, ['layout' => 'feed']) ?>
             </div>
           <?php endforeach; ?>
         </div>

@@ -13,6 +13,29 @@ $cartCount = cart_count();
 ?>
 </main>
 
+<!-- AI Errands Chat Widget -->
+<button class="chat-fab hello" id="chatFab" aria-label="Ask Errands — your kitchen helper">
+  <span class="chat-fab-ic">🍽️</span>
+  <span class="chat-fab-badge" id="chatFabBadge" hidden>1</span>
+</button>
+
+<dialog class="chat-dialog" id="chatDialog" aria-label="Chat with Errends">
+  <div class="chat-head">
+    <div class="chat-avatar">🧺</div>
+    <div>
+      <div class="chat-title">Errands</div>
+      <div class="chat-sub"><span class="chat-on"></span>Your kitchen helper — anything you need</div>
+    </div>
+    <form method="dialog"><button class="chat-close" type="button" id="chatClose" aria-label="Close chat">&times;</button></form>
+  </div>
+  <div class="chat-body" id="chatBody" aria-live="polite"></div>
+  <div class="chat-suggestions" id="chatSuggestions"></div>
+  <form class="chat-form" id="chatForm" autocomplete="off">
+    <input type="text" id="chatInput" placeholder="Ask Errands… e.g. 'Recommend a nice jollof'" aria-label="Chat message" autocomplete="off" spellcheck="true">
+    <button type="submit" id="chatSend" aria-label="Send message">➤</button>
+  </form>
+</dialog>
+
 <?php if (empty($hideCartBar)): ?>
 <a href="<?= e(base_url('cart.php')) ?>" class="cart-bar" data-cart-bar <?= $cartCount ? '' : 'hidden' ?>>
   <span class="cart-bar-count"><span data-cart-count><?= (int)$cartCount ?></span> in your order</span>
@@ -80,6 +103,7 @@ $cartCount = cart_count();
 
 <?php include __DIR__ . '/mobile-tab-bar.php'; ?>
 
-<script src="<?= e(base_url('assets/js/app.js')) ?>?v=8" defer></script>
+<script src="<?= e(base_url('assets/js/chat.js')) ?>?v=10" defer></script>
+<script src="<?= e(base_url('assets/js/app.js')) ?>?v=10" defer></script>
 </body>
 </html>
