@@ -783,19 +783,29 @@
         }
       });
       var items = document.querySelectorAll('.reveal');
-      if (!items.length || !('IntersectionObserver' in window)) {
-        items.forEach(function (i) { i.classList.add('on'); });
-        return;
-      }
+      var showAll = function () { items.forEach(function (i) { i.classList.add('on'); }); };
+      if (!items.length || !('IntersectionObserver' in window)) { showAll(); return; }
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (en) {
           if (en.isIntersecting) { en.target.classList.add('on'); io.unobserve(en.target); }
         });
-      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      }, { threshold: 0.06, rootMargin: '0px 0px -10px 0px' });
       items.forEach(function (el) { io.observe(el); });
+      // Safety: anything still masked after 2.5s gets unmasked regardless of observer
+      setTimeout(function () {
+        document.querySelectorAll('.reveal:not(.on)').forEach(function (i) { i.classList.add('on'); });
+      }, 2500);
     }
     var ric = ('requestIdleCallback' in window) ? requestIdleCallback : function (fn) { setTimeout(fn, 0); };
-    ric(init, { timeout: 1500 });
+    ric(init, { timeout: 900 });
+    // Ultra safety net: even if ric stalls, force init after 1.2s
+    setTimeout(function () {
+      if (!window.__revealBooted) {
+        window.__revealBooted = true;
+        if (typeof init === 'function') init();
+        else document.querySelectorAll('.reveal').forEach(function (i) { i.classList.add('on'); });
+      }
+    }, 1200);
   })();
 
   /* ------------------------------ Counter rolls on reward reveal ------------------------------ */
