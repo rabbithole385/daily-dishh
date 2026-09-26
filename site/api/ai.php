@@ -483,21 +483,6 @@ function ai_rule_answer(string $msg, array $ctx): array {
     $state = ai_state_get();
     $pdo  = $GLOBALS['pdo'];
 
-    // Prices / jollof / spicy / recommendations
-    $itemMatches = [];
-    foreach ($ctx['items'] as $it) {
-        if (empty($it['is_available'])) continue;
-        $hay = mb_strtolower($it['name'] . ' ' . ($it['description'] ?? '') . ' ' . ($it['category_name'] ?? ''));
-        $score = 0;
-        foreach (preg_split('/\s+/u', preg_replace('/[^a-z0-9 ]+/u', ' ', $m)) as $w) {
-            if ($w === '' || mb_strlen($w) < 2) continue;
-            if (str_contains($hay, $w)) $score += mb_strlen($w);
-        }
-        if ($score > 0) $itemMatches[] = ['score' => $score, 'item' => $it];
-    }
-    usort($itemMatches, function ($a, $b) { return $b['score'] - $a['score']; });
-    $top = array_slice($itemMatches, 0, 3);
-
     $wantSpicy   = str_contains($m, 'spicy') || str_contains($m, 'pepper') || str_contains($m, 'hot');
     $wantBudget  = preg_match('/(under|below|less than|cheap|budget|affordable|only)\s*[:=]?\s*n?\s*(\d{1,3}(?:[.,]\d{3})*)/u', $m, $bm);
     $budgetNaira = 0;
@@ -515,7 +500,66 @@ function ai_rule_answer(string $msg, array $ctx): array {
     $wantSeafood  = str_contains($m, 'seafood') || str_contains($m, 'fish') || str_contains($m, 'prawn') || str_contains($m, 'shrimp');
     $wantVeg      = str_contains($m, 'vegetarian') || str_contains($m, 'veg') || str_contains($m, 'plant') || str_contains($m, 'vegan');
     $wantDrink    = str_contains($m, 'drink') || str_contains($m, 'juice') || str_contains($m, 'water') || str_contains($m, 'wine') || str_contains($m, 'soft');
-    $wantCustom   = str_contains($m, 'custom') || str_contains($m, 'special') || str_contains($m, 'plate') || str_contains($m, 'personaliz');
+    $wantCustom   = str_contains($m, 'custom') || str_contains($m, 'special') || (str_contains($m, 'plate') && preg_match('/(build|make|create|design|my|own)\s+(my\s+)?(own\s+)?(plate|dish|order)/i', $msg)) || str_contains($m, 'personaliz');
+
+    // Prices / jollof / spicy / recommendations
+    $itemMatches = [];
+    $words = array_values(array_filter(array_map('mb_strtolower', preg_split('/\s+/u', preg_replace('/[^a-z0-9 ]+/u', ' ', $m))), fn($w) => mb_strlen($w) >= 2));
+    $bigrams = [];
+    for ($i = 0; $i + 1 < count($words); $i++) $bigrams[] = $words[$i] . ' ' . $words[$i + 1];
+    $phraseBlacklist = ['what is','what are','how do','how to','i want','i need','can i','can you','please','thank you','show me','tell me','where is','how much','order for','send me','give me','i would','i will','let me','make it','add a','add some','looking for','do you','you have','do u','do you have'];
+
+    foreach ($ctx['items'] as $it) {
+        if (empty($it['is_available'])) continue;
+        $hayWords = array_values(array_filter(array_map('mb_strtolower', preg_split('/\s+/u', preg_replace('/[^a-z0-9 ]+/u', ' ',
+            $it['name'] . ' ' . ($it['description'] ?? '') . ' ' . ($it['category_name'] ?? '')))), fn($w) => mb_strlen($w) >= 2));
+        $hayBigrams = [];
+        for ($i = 0; $i + 1 < count($hayWords); $i++) $hayBigrams[] = $hayWords[$i] . ' ' . $hayWords[$i + 1];
+        $score = 0;
+        foreach ($words as $w) {
+            if (in_array($w, $phraseBlacklist, true)) continue;
+            foreach ($hayWords as $hw) {
+                if ($w === $hw)                         { $score += 10 + mb_strlen($w); break; }
+                if (str_starts_with($hw, $w) || str_starts_with($w, $hw)) { $score += 3 + mb_strlen($w); break; }
+                if (str_contains($hw, $w) || str_contains($w, $hw)) { $score += 2 + intdiv(mb_strlen($w), 2); break; }
+            }
+        }
+        foreach ($bigrams as $b) {
+            if (in_array($b, $hayBigrams, true)) $score += 22;
+            elseif (str_contains(implode(' ', $hayWords), $b)) $score += 12;
+        }
+        // Category / signal biases
+        $cat = strtolower(trim($it['category_name'] ?? ''));
+        if ($wantJollof || $wantRice)   if (str_contains($cat, 'rice') || str_contains($cat, 'bowl')) $score += 14;
+        if ($wantSoup)                  if (str_contains($cat, 'soup') || str_contains($cat, 'swallow')) $score += 14;
+        if ($wantGrill)                 if (str_contains($cat, 'grill')) $score += 14;
+        if ($wantPasta)                 if (str_contains($cat, 'pasta') || str_contains($cat, 'noodle')) $score += 14;
+        if ($wantFamily || $wantJollof) if (!empty($it['is_featured'])) $score += 7;
+        if ($wantBudget && $budgetNaira && $it['price'] !== null && $it['price'] !== '' && (float)$it['price'] <= $budgetNaira) $score += 8;
+        if ($wantSpicy) {
+            $hay = mb_strtolower($it['name'] . ' ' . ($it['description'] ?? ''));
+            if (str_contains($hay, 'spicy') || str_contains($hay, 'pepper') || str_contains($hay, 'hot') || str_contains($hay, 'suya')) $score += 10;
+        }
+        if ($wantSeafood) {
+            $hay = mb_strtolower($it['name'] . ' ' . ($it['description'] ?? ''));
+            if (str_contains($hay, 'fish') || str_contains($hay, 'prawn') || str_contains($hay, 'shrimp') || str_contains($hay, 'octopus') || str_contains($hay, 'tilapia') || str_contains($hay, 'catfish')) $score += 12;
+        }
+        if ($wantChicken) {
+            $hay = mb_strtolower($it['name'] . ' ' . ($it['description'] ?? ''));
+            if (str_contains($hay, 'chicken') || str_contains($hay, 'turkey')) $score += 10;
+        }
+        if ($wantBeef) {
+            $hay = mb_strtolower($it['name'] . ' ' . ($it['description'] ?? ''));
+            if (str_contains($hay, 'beef') || str_contains($hay, 'meat') || str_contains($hay, 'cow') || str_contains($hay, 'assorted')) $score += 10;
+        }
+        if ($wantVeg) {
+            $hay = mb_strtolower($it['name'] . ' ' . ($it['description'] ?? ''));
+            if (str_contains($hay, 'veg') || str_contains($hay, 'plantain') || str_contains($hay, 'salad')) $score += 10;
+        }
+        if ($score > 0) $itemMatches[] = ['score' => $score, 'item' => $it];
+    }
+    usort($itemMatches, function ($a, $b) { return $b['score'] - $a['score']; });
+    $top = array_slice($itemMatches, 0, 3);
 
     // Intent: greetings
     if (preg_match('/^(hi|hello|hey|good (morning|afternoon|evening)|howdy|hola|yo)\b/i', $msg)) {
@@ -775,10 +819,11 @@ function ai_llm_provider_config(PDO $pdo): array {
     $provider = get_setting($pdo, 'llm_provider', 'rules');
     $key      = get_setting($pdo, 'llm_api_key', '');
     $model    = get_setting($pdo, 'llm_model', '');
-    if ($provider === 'openai' && !$model) $model = 'gpt-4o-mini';
-    if ($provider === 'anthropic' && !$model) $model = 'claude-3-5-haiku-latest';
+    if ($provider === 'openai' && !$model)     $model = 'gpt-4o-mini';
+    if ($provider === 'anthropic' && !$model)  $model = 'claude-3-5-haiku-latest';
+    if ($provider === 'openrouter' && !$model) $model = 'meta-llama/llama-3.1-8b-instruct:free';
     return [
-        'provider' => $provider, // 'openai' | 'anthropic' | 'rules'
+        'provider' => $provider, // 'openai' | 'anthropic' | 'openrouter' | 'rules'
         'key'      => $key,
         'model'    => $model,
     ];
@@ -786,7 +831,7 @@ function ai_llm_provider_config(PDO $pdo): array {
 
 function ai_llm_call(PDO $pdo, string $message, array $history, array $ctx): ?array {
     $cfg = ai_llm_provider_config($pdo);
-    if ($cfg['provider'] === 'rules' || $cfg['key'] === '' || !in_array($cfg['provider'], ['openai', 'anthropic'], true)) {
+    if ($cfg['provider'] === 'rules' || $cfg['key'] === '' || !in_array($cfg['provider'], ['openai', 'anthropic', 'openrouter'], true)) {
         return null;
     }
 
@@ -892,24 +937,30 @@ PROMPT;
 
     try {
         $timeout = 22; // seconds
-        if ($cfg['provider'] === 'openai') {
+        if ($cfg['provider'] === 'openai' || $cfg['provider'] === 'openrouter') {
             $payload = json_encode([
                 'model'       => $cfg['model'],
                 'messages'    => $msgs,
                 'temperature' => 0.7,
                 'max_tokens'  => 600,
             ]);
+            $endpoint = $cfg['provider'] === 'openrouter'
+                ? 'https://openrouter.ai/api/v1/chat/completions'
+                : 'https://api.openai.com/v1/chat/completions';
+            $extraHeaders = $cfg['provider'] === 'openrouter'
+                ? "HTTP-Referer: https://dailydishabuja.com\r\nX-Title: Daily Dish Abuja\r\n"
+                : '';
             $ctxHttp = stream_context_create([
                 'http' => [
                     'method'  => 'POST',
-                    'header'  => "Content-Type: application/json\r\nAuthorization: Bearer {$cfg['key']}\r\n",
+                    'header'  => "Content-Type: application/json\r\nAuthorization: Bearer {$cfg['key']}\r\n{$extraHeaders}",
                     'content' => $payload,
                     'timeout' => $timeout,
                     'ignore_errors' => true,
                 ],
                 'ssl'  => ['verify_peer' => true, 'verify_peer_name' => true],
             ]);
-            $raw = @file_get_contents('https://api.openai.com/v1/chat/completions', false, $ctxHttp);
+            $raw = @file_get_contents($endpoint, false, $ctxHttp);
             if (!$raw) return null;
             $data = json_decode($raw, true);
             $content = $data['choices'][0]['message']['content'] ?? '';

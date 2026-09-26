@@ -75,7 +75,7 @@ $err = flash_get('error');
         <?php
           $cartItemIds = array_map(fn($l) => (int)$l['item']['id'], $lines);
           $placeholders = implode(',', array_fill(0, count($cartItemIds), '?'));
-          $alsoStmt = $pdo->prepare("SELECT * FROM menu_items WHERE is_available = 1 AND price IS NOT NULL AND id NOT IN ($placeholders) ORDER BY RAND() LIMIT 3");
+          $alsoStmt = $pdo->prepare("SELECT * FROM menu_items WHERE is_available = 1 AND price IS NOT NULL AND id NOT IN ($placeholders) ORDER BY RANDOM() LIMIT 3");
           $alsoStmt->execute($cartItemIds);
           $alsoItems = $alsoStmt->fetchAll(PDO::FETCH_ASSOC);
         ?>

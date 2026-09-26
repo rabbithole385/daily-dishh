@@ -341,8 +341,25 @@
     if (!hasGreeted && badge) {
         setTimeout(function () {
             if (!dialog.hasAttribute('open')) badge.hidden = false;
-        }, 4500);
+        }, 2500);
     }
+
+    // Auto-popup Errands on first visit (once per session)
+    (function () {
+        try {
+            if (sessionStorage.getItem('dd_chat_pop_v1')) return;
+        } catch (_) {}
+        if (hasGreeted) return;
+        setTimeout(function () {
+            if (dialog.hasAttribute('open')) return;
+            try { sessionStorage.setItem('dd_chat_pop_v1', '1'); } catch (_) {}
+            fab.classList.add('pulse');
+            setTimeout(function () {
+                if (!dialog.hasAttribute('open')) openChat();
+                fab.classList.remove('pulse');
+            }, 1200);
+        }, 3800);
+    })();
 
     // Mobile: keep input above soft keyboard
     if (window.visualViewport && typeof window.visualViewport.addEventListener === 'function') {

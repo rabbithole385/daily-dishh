@@ -110,23 +110,24 @@ include __DIR__ . '/includes/admin-header.php';
 
   <div class="card">
     <h2>AI Assistant — Errands (Errand Boy)</h2>
-    <p style="margin-top:-10px;margin-bottom:18px;color:var(--ink-soft);font-size:.9rem;">The chat widget on the public site uses these settings. If no API key is set, Errands will run on our in-house keyword engine (still works great).</p>
+    <p style="margin-top:-10px;margin-bottom:18px;color:var(--ink-soft);font-size:.9rem;">The chat widget on the public site uses these settings. <b>Free option:</b> pick <b>OpenRouter</b>, grab a free key from openrouter.ai, leave the model on the default Llama free tier, and Errands becomes a real LLM-powered errand boy. If no API key is set, Errands will run on our in-house keyword engine (smart, no cost).</p>
     <div class="form-grid">
       <div class="form-row">
         <label for="llm_provider">Provider</label>
         <select id="llm_provider" name="llm_provider">
-          <option value="rules"    <?= $values['llm_provider'] === 'rules'    ? 'selected' : '' ?>>Rule engine only (no API key needed)</option>
+          <option value="rules"    <?= $values['llm_provider'] === 'rules'    ? 'selected' : '' ?>>Rule engine only (no API key needed, free)</option>
+          <option value="openrouter"<?= $values['llm_provider'] === 'openrouter'? 'selected' : '' ?>>OpenRouter (recommended — free-tier Llama / Mistral available)</option>
           <option value="openai"   <?= $values['llm_provider'] === 'openai'   ? 'selected' : '' ?>>OpenAI</option>
           <option value="anthropic"<?= $values['llm_provider'] === 'anthropic'? 'selected' : '' ?>>Anthropic</option>
         </select>
       </div>
       <div class="form-row">
         <label for="llm_api_key">API key<?= $values['llm_api_key'] ? ' (leave blank to keep current)' : '' ?></label>
-        <input id="llm_api_key" name="llm_api_key" type="password" autocomplete="off" placeholder="<?= $values['llm_api_key'] ? '•••••••• current key saved' : 'sk-...' ?>">
+        <input id="llm_api_key" name="llm_api_key" type="password" autocomplete="off" placeholder="<?= $values['llm_api_key'] ? '•••••••• current key saved' : 'e.g. sk-or-v1-… (OpenRouter) / sk-… (OpenAI)' ?>">
       </div>
       <div class="form-row">
-        <label for="llm_model">Model (blank = default: <code>gpt-4o-mini</code> / <code>claude-3-5-haiku-latest</code>)</label>
-        <input id="llm_model" name="llm_model" type="text" value="<?= e($values['llm_model']) ?>" placeholder="e.g. gpt-4o-mini">
+        <label for="llm_model">Model (blank = defaults: <code>meta-llama/llama-3.1-8b-instruct:free</code> / <code>gpt-4o-mini</code> / <code>claude-3-5-haiku-latest</code>)</label>
+        <input id="llm_model" name="llm_model" type="text" value="<?= e($values['llm_model']) ?>" placeholder="e.g. meta-llama/llama-3.1-8b-instruct:free">
       </div>
     </div>
   </div>

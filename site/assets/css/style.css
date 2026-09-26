@@ -1825,6 +1825,10 @@ body { overflow-x: hidden; }
   30% { transform: scale(1.08); }
 }
 .chat-fab.hello { animation: chatFabPulse 2s ease-out 3s 1; }
+.chat-fab.pulse {
+  animation: chatFabPulse .9s cubic-bezier(.2,.8,.2,1) 0s 2;
+  box-shadow: 0 14px 32px -12px rgba(168,58,18,.55), 0 0 0 6px rgba(199,134,42,.18);
+}
 
 /* Dialog shell */
 .chat-dialog {

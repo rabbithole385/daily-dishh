@@ -359,11 +359,9 @@
     if (!originEl) return;
     var container = originEl.closest('.dish-photo, .ft-img, .also-img');
     if (!container) return;
-    var quickAdds = container.querySelectorAll('.quick-add[data-item-id="' + itemId + '"], .quick-add');
-    quickAdds.forEach(function (qa) {
-      var qaId = qa.getAttribute('data-item-id');
-      if (!qaId || qaId === String(itemId)) qa.hidden = true;
-    });
+    var sel = '.quick-add[data-item-id="' + itemId + '"]';
+    var quickAdds = container.querySelectorAll(sel);
+    quickAdds.forEach(function (qa) { qa.hidden = true; });
     var existing = container.querySelector('.inline-stepper[data-inline-item="' + itemId + '"]');
     if (existing) {
       var out = existing.querySelector('output');
@@ -388,9 +386,9 @@
     stepper.appendChild(dec);
     stepper.appendChild(output);
     stepper.appendChild(inc);
-    var firstQuickAdd = container.querySelector('.quick-add');
-    if (firstQuickAdd && firstQuickAdd.parentNode) {
-      firstQuickAdd.parentNode.insertBefore(stepper, firstQuickAdd.nextSibling);
+    var target = container.querySelector(sel);
+    if (target && target.parentNode) {
+      target.parentNode.insertBefore(stepper, target.nextSibling);
     } else {
       container.appendChild(stepper);
     }
@@ -402,10 +400,7 @@
         if (o) o.textContent = d.qty;
         if (d.qty <= 0) {
           stepper.remove();
-          container.querySelectorAll('.quick-add').forEach(function (qa) {
-            var qaId = qa.getAttribute('data-item-id');
-            if (!qaId || qaId === String(itemId)) qa.hidden = false;
-          });
+          container.querySelectorAll(sel).forEach(function (qa) { qa.hidden = false; });
         }
       }).catch(function () { toast('Could not update cart.', true); });
     });
@@ -499,13 +494,14 @@
       }).catch(function () { btn.disabled = false; toast('Could not reach the kitchen. Check your connection.', true); });
     });
     document.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-open-dish]');
-      if (!t) return;
-      var host = t.closest('[data-dish]');
-      if (!host) return;
-      e.preventDefault();
-      open(JSON.parse(host.getAttribute('data-dish')));
-    });
+    var t = e.target.closest('[data-open-dish]');
+    if (!t) return;
+    if (e.target.closest('[data-quick-add], .btn-add, form[data-add], .inline-stepper, button, a')) return;
+    var host = t.closest('[data-dish]');
+    if (!host) return;
+    e.preventDefault();
+    open(JSON.parse(host.getAttribute('data-dish')));
+  });
   }
 
   /* ------------------------------ Cart page stepper / clear AJAX ------------------------------ */
