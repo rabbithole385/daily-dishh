@@ -103,7 +103,7 @@ $cartCount = cart_count();
 
 <?php include __DIR__ . '/mobile-tab-bar.php'; ?>
 
-<script src="<?= e(base_url('assets/js/chat.js')) ?>?v=10" defer></script>
-<script src="<?= e(base_url('assets/js/app.js')) ?>?v=10" defer></script>
+<script src="<?= e(base_url('assets/js/chat.js')) ?>?v=11" defer></script>
+<script src="<?= e(base_url('assets/js/app.js')) ?>?v=11" defer></script>
 </body>
 </html>

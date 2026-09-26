@@ -184,6 +184,7 @@ p { margin: 0 0 1em; }
   .gp-level { width: 36px; height: 36px; }
 }
 @media (max-width: 880px) {
+  body { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
   .topbar-in { gap: 10px; }
   .nav-toggle { display: block; }
   .cart-pill-label { display: none; }
@@ -197,6 +198,9 @@ p { margin: 0 0 1em; }
   .nav.open { transform: none; opacity: 1; visibility: visible; }
   .nav a { padding: 14px 4px; border-radius: 0; border-bottom: 1px solid var(--line); font-size: 1.1rem; background: none !important; }
   .nav a.on { color: var(--jollof-deep); }
+  .floating-place-order {
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }
 
 /* ---------- Floating WhatsApp FAB ---------- */

@@ -136,7 +136,6 @@
                 ).then(function () {
                     btn.textContent = 'Added ✓';
                     btn.classList.remove('secondary');
-                    btn.classList.add('secondary');
                 }).catch(function () {
                     btn.disabled = false;
                     btn.textContent = 'Try again';
