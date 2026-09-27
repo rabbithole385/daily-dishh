@@ -99,53 +99,99 @@ include __DIR__ . '/includes/header.php';
     $hay = mb_strtolower(($d['name'] ?? '') . ' ' . ($d['category_name'] ?? ''));
     return strpos($hay, 'rice') !== false || strpos($hay, 'jollof') !== false || strpos($hay, 'fried') !== false;
   }
-  $largePick = null;
+  $signatureDish = null;
   foreach ($featured as $idx => $d) {
-    if (!_isRiceDish($d)) { $largePick = $d; unset($featured[$idx]); break; }
+    if (!_isRiceDish($d)) { $signatureDish = $d; unset($featured[$idx]); break; }
   }
   $featured = array_values($featured);
-  if (!$largePick && !empty($featured)) { $largePick = $featured[0]; $featured = array_slice($featured, 1); }
-  $editorSmallPool = $featured;
-  $editorSmall1 = $editorSmallPool[0] ?? null;
-  $editorSmall2 = $editorSmallPool[1] ?? null;
-  $editorCollage = [];
-  if ($largePick) $editorCollage[] = $largePick;
-  if ($editorSmall1) $editorCollage[] = $editorSmall1;
-  if ($editorSmall2) $editorCollage[] = $editorSmall2;
-  $editorLarge = $largePick;
-  $carouselFeatured = array_slice($editorSmallPool, 2);
+  if (!$signatureDish && !empty($featured)) { $signatureDish = $featured[0]; $featured = array_slice($featured, 1); }
+  $bites = array_slice($featured, 0, 4);
+  $allPicks = [];
+  if ($signatureDish) $allPicks[] = $signatureDish;
+  foreach ($bites as $b) $allPicks[] = $b;
+  $carouselFeatured = array_slice($featured, 4);
+  $sigPrice = $signatureDish['price'] ?? null;
 ?>
 <section class="section-tight reveal">
   <div class="wrap">
     <div class="section-head">
       <div>
-        <span class="eyebrow">Editor's Pick</span>
-        <h2>Chef's selections this week</h2>
-        <p>Fresh picks from our kitchen — tap the quick-add button to add any dish straight to your order.</p>
+        <span class="eyebrow">From the Pass</span>
+        <h2>Today from our kitchen</h2>
+        <p>Handpicked plates we're proud of this week — the chef's signature, plus four quick bites you'll love.</p>
       </div>
       <a class="link-arrow" href="<?= e(base_url('menu.php')) ?>">See the full menu</a>
     </div>
-    <div class="editor-collage">
-      <?php if ($editorLarge): ?>
-        <div class="ec-large">
-          <?= dish_markup($editorLarge, ['show_cat' => true]) ?>
+
+    <div class="signature-spread">
+      <article class="sig-dish">
+        <div class="sig-photo">
+          <?php if (!empty($signatureDish['category_name'])): ?>
+            <span class="sig-tag sig-tag-cat"><?= e($signatureDish['category_name']) ?></span>
+          <?php endif; ?>
+          <span class="sig-tag sig-tag-hero">Chef's Signature</span>
+          <img src="<?= e(img_url($signatureDish['image'])) ?>" alt="<?= e($signatureDish['name']) ?>" fetchpriority="high" decoding="async">
+          <?php if ($sigPrice !== null): ?>
+            <button class="sig-add sig-add-over" data-quick-add data-item-id="<?= (int)$signatureDish['id'] ?>">
+              Add to order · <?= e(money($sigPrice, $pdo, false)) ?>
+            </button>
+          <?php endif; ?>
         </div>
-      <?php endif; ?>
-      <div class="ec-small">
-        <?php if ($editorSmall1): ?>
-          <div class="ec-small-item">
-            <?= dish_markup($editorSmall1, ['show_cat' => true]) ?>
+        <div class="sig-body" data-open-dish>
+          <h3 class="sig-name"><?= e($signatureDish['name']) ?></h3>
+          <p class="sig-desc"><?= e($signatureDish['description'] ?? '') ?></p>
+          <div class="sig-meta">
+            <div class="sig-price-wrap">
+              <?php if ($sigPrice !== null): ?>
+                <span class="sig-price"><?= e(money($sigPrice, $pdo)) ?></span>
+                <small>serves 1 · plated to order</small>
+              <?php else: ?>
+                <a class="btn btn-ghost sig-ask" href="https://wa.me/<?= e(get_setting($pdo, 'whatsapp')) ?>?text=<?= rawurlencode('Hi, please what’s the price of ' . $signatureDish['name'] . '?') ?>" target="_blank" rel="noopener">Ask price on WhatsApp</a>
+              <?php endif; ?>
+            </div>
+            <div class="sig-chef">
+              <div class="sig-avatar">👨‍🍳</div>
+              <div><strong>Chef's note</strong><small>Smoked, seasoned and slow-finished in our clay pot.</small></div>
+            </div>
           </div>
-        <?php endif; ?>
-        <?php if ($editorSmall2): ?>
-          <div class="ec-small-item">
-            <?= dish_markup($editorSmall2, ['show_cat' => true]) ?>
-          </div>
-        <?php endif; ?>
-      </div>
+        </div>
+      </article>
+
+      <aside class="bites-panel docket">
+        <div class="bites-head">
+          <span class="docket-title">Today's Bites</span>
+          <span class="docket-meta">quick picks</span>
+        </div>
+        <ul class="bites-list">
+          <?php foreach ($bites as $i => $b):
+            $bPrice = $b['price'] ?? null;
+          ?>
+            <li class="bite">
+              <div class="bite-n"><?= $i + 1 ?></div>
+              <img class="bite-img" src="<?= e(img_url($b['image'])) ?>" alt="<?= e($b['name']) ?>" loading="lazy" decoding="async">
+              <div class="bite-info">
+                <div class="bite-top">
+                  <span class="bite-cat"><?= e($b['category_name'] ?? '') ?></span>
+                  <?php if (!empty($b['is_featured'])): ?><span class="bite-hot">🔥 HOT</span><?php endif; ?>
+                </div>
+                <h4 class="bite-name"><?= e($b['name']) ?></h4>
+                <div class="bite-foot">
+                  <?php if ($bPrice !== null): ?>
+                    <strong class="bite-price"><?= e(money($bPrice, $pdo)) ?></strong>
+                    <button class="bite-add" data-quick-add data-item-id="<?= (int)$b['id'] ?>">+ Add</button>
+                  <?php else: ?>
+                    <a class="bite-ask" href="https://wa.me/<?= e(get_setting($pdo, 'whatsapp')) ?>?text=<?= rawurlencode('Hi, please what’s the price of ' . $b['name'] . '?') ?>" target="_blank" rel="noopener">Ask price</a>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      </aside>
     </div>
+
     <div class="feed-grid editor-feed mobile-only">
-      <?php foreach ($editorCollage as $item): ?>
+      <?php foreach ($allPicks as $item): ?>
         <?= dish_markup($item, ['layout' => 'feed']) ?>
       <?php endforeach; ?>
     </div>
@@ -157,6 +203,7 @@ include __DIR__ . '/includes/header.php';
   <div class="wrap">
     <div class="section-head">
       <div>
+        <span class="eyebrow">Also Starring</span>
         <h2>More favourites this week</h2>
         <p>Swipe through the rest of our top picks.</p>
       </div>

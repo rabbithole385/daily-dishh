@@ -357,11 +357,17 @@
 
   function replaceWithInlineStepper(originEl, itemId, qty) {
     if (!originEl) return;
-    var container = originEl.closest('.dish-photo, .ft-img, .also-img');
+    var container = originEl.closest('.dish-photo, .ft-img, .also-img, .sig-photo, .bite');
     if (!container) return;
-    var sel = '.quick-add[data-item-id="' + itemId + '"]';
-    var quickAdds = container.querySelectorAll(sel);
-    quickAdds.forEach(function (qa) { qa.hidden = true; });
+    var isBite = container.classList && container.classList.contains('bite');
+    var isSig = container.classList && container.classList.contains('sig-photo');
+    var quickSel = '[data-quick-add][data-item-id="' + itemId + '"]';
+    var quickAdds = container.querySelectorAll(quickSel);
+    quickAdds.forEach(function (qa) {
+      if (qa.classList.contains('bite-add')) qa.style.display = 'none';
+      else qa.hidden = true;
+    });
+    if (isBite) container.classList.add('stepper-here');
     var existing = container.querySelector('.inline-stepper[data-inline-item="' + itemId + '"]');
     if (existing) {
       var out = existing.querySelector('output');
@@ -370,6 +376,8 @@
     }
     var stepper = document.createElement('div');
     stepper.className = 'inline-stepper';
+    if (isBite) stepper.className += ' bite-stepper';
+    if (isSig) stepper.className += ' sig-stepper';
     stepper.setAttribute('data-inline-item', String(itemId));
     var dec = document.createElement('button');
     dec.type = 'button';
@@ -386,12 +394,25 @@
     stepper.appendChild(dec);
     stepper.appendChild(output);
     stepper.appendChild(inc);
-    var target = container.querySelector(sel);
-    if (target && target.parentNode) {
+    var target = null;
+    quickAdds.forEach(function (qa) { if (!target) target = qa; });
+    if (isBite) {
+      var foot = container.querySelector('.bite-foot');
+      if (foot) foot.appendChild(stepper);
+      else if (target && target.parentNode) target.parentNode.insertBefore(stepper, target.nextSibling);
+      else container.appendChild(stepper);
+    } else if (target && target.parentNode) {
       target.parentNode.insertBefore(stepper, target.nextSibling);
     } else {
       container.appendChild(stepper);
     }
+    var hideAll = function () {
+      quickAdds.forEach(function (qa) {
+        if (qa.classList.contains('bite-add')) qa.style.display = '';
+        else qa.hidden = false;
+      });
+      if (isBite) container.classList.remove('stepper-here');
+    };
     dec.addEventListener('click', function () {
       post({ action: 'dec', item_id: itemId, qty: 1 }).then(function (d) {
         syncCart(d);
@@ -400,7 +421,7 @@
         if (o) o.textContent = d.qty;
         if (d.qty <= 0) {
           stepper.remove();
-          container.querySelectorAll(sel).forEach(function (qa) { qa.hidden = false; });
+          hideAll();
         }
       }).catch(function () { toast('Could not update cart.', true); });
     });
