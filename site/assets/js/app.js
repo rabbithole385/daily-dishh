@@ -773,14 +773,81 @@
       if (!track) return;
       var left = document.querySelector('[data-carousel-prev]');
       var right = document.querySelector('[data-carousel-next]');
+      var items = Array.prototype.slice.call(track.querySelectorAll('.carousel-item'));
+      if (items.length === 0) return;
+
+      function cardStep() {
+        var first = items[0];
+        if (!first) return 340;
+        var w = first.getBoundingClientRect().width;
+        return Math.max(280, Math.round(w + 14));
+      }
+
       function scrollByFn(delta) { track.scrollBy({ left: delta, behavior: prefersReduced ? 'auto' : 'smooth' }); }
-      if (left) left.addEventListener('click', function () { scrollByFn(-340); });
-      if (right) right.addEventListener('click', function () { scrollByFn(340); });
-      if (!prefersReduced) {
+      if (left) left.addEventListener('click', function () { scrollByFn(-cardStep()); });
+      if (right) right.addEventListener('click', function () { scrollByFn(cardStep()); });
+
+      if (!prefersReduced && track.hasAttribute('data-autoplay')) {
         var paused = false;
-        track.addEventListener('mouseenter', function () { paused = true; });
-        track.addEventListener('mouseleave', function () { paused = false; });
-        setInterval(function () { if (!paused) scrollByFn(1); }, 90);
+        var drag = false;
+        var dragStartX = 0;
+        var dragMoved = 0;
+        var step = 4000;
+        var pause = function () { paused = true; };
+        var resume = function () {
+          paused = false;
+          drag = false;
+          dragMoved = 0;
+        };
+        track.addEventListener('mouseenter', pause);
+        track.addEventListener('mouseleave', resume);
+        track.addEventListener('focusin', pause);
+        track.addEventListener('focusout', resume);
+        track.addEventListener('touchstart', function (e) {
+          pause();
+          drag = true;
+          dragMoved = 0;
+          if (e.touches && e.touches[0]) dragStartX = e.touches[0].clientX;
+        }, { passive: true });
+        track.addEventListener('touchmove', function (e) {
+          if (!drag || !e.touches || !e.touches[0]) return;
+          dragMoved = Math.max(dragMoved, Math.abs(e.touches[0].clientX - dragStartX));
+        }, { passive: true });
+        track.addEventListener('touchend', function () {
+          if (dragMoved > 6) return resume();
+          setTimeout(resume, 1600);
+        });
+        track.addEventListener('pointerdown', function () {
+          pause();
+          drag = true;
+          dragMoved = 0;
+        });
+        track.addEventListener('pointerup', function () {
+          setTimeout(resume, 2200);
+        });
+        track.addEventListener('scroll', function () {
+          if (drag) dragMoved = Math.max(dragMoved, 8);
+        }, { passive: true });
+        document.addEventListener('visibilitychange', function () {
+          if (document.hidden) pause(); else resume();
+        });
+
+        var timer = null;
+        function tick() {
+          if (paused) return;
+          var maxScroll = track.scrollWidth - track.clientWidth - 2;
+          if (track.scrollLeft >= maxScroll) {
+            if (prefersReduced) track.scrollLeft = 0;
+            else track.scrollTo({ left: 0, behavior: 'smooth' });
+          } else {
+            scrollByFn(cardStep());
+          }
+        }
+        function start() {
+          if (timer) clearInterval(timer);
+          timer = setInterval(tick, step);
+        }
+        start();
       }
     }
     var ric = ('requestIdleCallback' in window) ? requestIdleCallback : function (fn) { setTimeout(fn, 0); };

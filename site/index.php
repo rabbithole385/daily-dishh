@@ -211,7 +211,7 @@ include __DIR__ . '/includes/header.php';
     <div class="carousel">
       <button class="carousel-prev" data-carousel-prev aria-label="Previous">‹</button>
       <div class="carousel-viewport">
-        <div class="carousel-track" data-carousel-track>
+        <div class="carousel-track" data-carousel-track data-autoplay>
           <?php foreach ($carouselFeatured as $item): ?>
             <div class="carousel-item">
               <?= dish_markup($item, ['show_cat' => true]) ?>
@@ -220,11 +220,6 @@ include __DIR__ . '/includes/header.php';
         </div>
       </div>
       <button class="carousel-next" data-carousel-next aria-label="Next">›</button>
-    </div>
-    <div class="feed-grid carousel-feed mobile-only">
-      <?php foreach ($carouselFeatured as $item): ?>
-        <?= dish_markup($item, ['layout' => 'feed']) ?>
-      <?php endforeach; ?>
     </div>
   </div>
 </section>

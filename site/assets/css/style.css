@@ -554,6 +554,7 @@ p { margin: 0 0 1em; }
 }
 .carousel-track::-webkit-scrollbar { height: 6px; }
 .carousel-track::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; }
+.carousel-item { scroll-snap-align: start; flex-shrink: 0; }
 .carousel .dish {
   flex: 0 0 min(320px, 86%); scroll-snap-align: start;
 }
@@ -565,6 +566,38 @@ p { margin: 0 0 1em; }
 }
 .carousel-prev:hover, .carousel-next:hover { background: var(--cocoa); color: #fff; border-color: var(--cocoa); transform: translateY(-1px); }
 .carousel-prev:disabled, .carousel-next:disabled { opacity: 0; pointer-events: none; }
+
+/* Mobile carousel — cards LAP the screen, tiny peek of next, no arrows, no scrollbar */
+@media (max-width: 720px) {
+  .carousel { gap: 0; margin: 0 -16px; }
+  .carousel-viewport { border-radius: 0; overflow: visible; }
+  .carousel-track {
+    padding: 8px 16px 26px;
+    gap: 14px;
+    scrollbar-width: none;
+    cursor: grab;
+  }
+  .carousel-track:active { cursor: grabbing; }
+  .carousel-track::-webkit-scrollbar { display: none; }
+  .carousel-item {
+    width: calc(88vw - 16px);
+    max-width: 420px;
+  }
+  .carousel-item .dish {
+    width: 100%;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .carousel-item .dish-photo {
+    aspect-ratio: 16 / 10;
+    min-height: 230px;
+  }
+  .carousel-prev, .carousel-next { display: none; }
+}
+@media (max-width: 420px) {
+  .carousel-item { width: calc(90vw - 16px); }
+  .carousel-item .dish-photo { min-height: 210px; }
+}
 
 /* ---------- Dish cards (mature hover + reveal animations) ---------- */
 .dish-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 22px; }
