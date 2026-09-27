@@ -205,12 +205,13 @@ p { margin: 0 0 1em; }
 
 /* ---------- Floating WhatsApp FAB ---------- */
 .wa-fab {
-  position: fixed; right: 18px; bottom: calc(90px + env(safe-area-inset-bottom, 0px));
-  z-index: 44; width: 60px; height: 60px; border-radius: 50%;
+  position: fixed !important; right: 18px; bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  z-index: 44 !important; width: 60px; height: 60px; border-radius: 50%;
   display: grid; place-items: center; color: #fff; text-decoration: none;
   background: #1F8A4C;
   box-shadow: 0 16px 32px -10px rgba(31,138,76,.7), inset 0 1px 0 rgba(255,255,255,.3);
   transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s ease;
+  isolation: isolate;
 }
 .wa-fab:hover { transform: translateY(-2px); box-shadow: 0 20px 38px -10px rgba(31,138,76,.8), inset 0 1px 0 rgba(255,255,255,.4); }
 .wa-fab svg { width: 30px; height: 30px; }
@@ -1462,6 +1463,18 @@ body.sheet-open { overflow: hidden; }
 .editor-collage > * { min-height: 220px; display: flex; flex-direction: column; }
 .editor-feed { margin-top: 14px; }
 .carousel-feed { margin-top: 14px; }
+@media (min-width: 721px) and (max-width: 899px) {
+  .editor-collage {
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 220px 220px;
+    grid-auto-rows: 220px;
+  }
+  .editor-collage > :first-child {
+    grid-row: 1 / span 2;
+    min-height: 100%;
+  }
+  .editor-collage > :first-child .dish-photo { aspect-ratio: auto; height: 100%; }
+}
 @media (min-width: 900px) {
   .editor-collage {
     grid-template-columns: 2fr 1fr;
