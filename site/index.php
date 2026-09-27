@@ -95,11 +95,25 @@ include __DIR__ . '/includes/header.php';
 </section>
 
 <?php if ($featured):
-  $editorCollage = array_slice($featured, 0, 3);
-  $editorLarge = $editorCollage[0] ?? null;
-  $editorSmall1 = $editorCollage[1] ?? null;
-  $editorSmall2 = $editorCollage[2] ?? null;
-  $carouselFeatured = array_slice($featured, 3);
+  function _isRiceDish($d) {
+    $hay = mb_strtolower(($d['name'] ?? '') . ' ' . ($d['category_name'] ?? ''));
+    return strpos($hay, 'rice') !== false || strpos($hay, 'jollof') !== false || strpos($hay, 'fried') !== false;
+  }
+  $largePick = null;
+  foreach ($featured as $idx => $d) {
+    if (!_isRiceDish($d)) { $largePick = $d; unset($featured[$idx]); break; }
+  }
+  $featured = array_values($featured);
+  if (!$largePick && !empty($featured)) { $largePick = $featured[0]; $featured = array_slice($featured, 1); }
+  $editorSmallPool = $featured;
+  $editorSmall1 = $editorSmallPool[0] ?? null;
+  $editorSmall2 = $editorSmallPool[1] ?? null;
+  $editorCollage = [];
+  if ($largePick) $editorCollage[] = $largePick;
+  if ($editorSmall1) $editorCollage[] = $editorSmall1;
+  if ($editorSmall2) $editorCollage[] = $editorSmall2;
+  $editorLarge = $largePick;
+  $carouselFeatured = array_slice($editorSmallPool, 2);
 ?>
 <section class="section-tight reveal">
   <div class="wrap">
